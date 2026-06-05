@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Record Shelf</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      /* Colors */
+      --bg-primary: #1a1008;
+      --bg-dark-overlay: rgba(0, 0, 0, 0.8);
+      --accent-warm: #d4a574;
+      --accent-burnt: #c68642;
+      --text-light: #f5e6c8;
+      --text-muted: #b8956a;
+      --spotify-green: #1DB954;
+      --border-aged: #6b5344;
+
+      /* Typography */
+      --font-display: 'Playfair Display', serif;
+      --font-mono: 'DM Mono', monospace;
+      --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      font-family: var(--font-body);
+      color: var(--text-light);
+      background-color: var(--bg-primary);
+      overflow-x: hidden;
+    }
+
+    body {
+      background-image:
+        url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" result="noise" /></filter><rect width="100" height="100" fill="%231a1008" /><rect width="100" height="100" fill="%23000000" opacity="0.02" filter="url(%23noise)" /></svg>');
+      background-size: 100px 100px;
+    }
+
+    header {
+      text-align: center;
+      padding: 3rem 1rem 2rem;
+      border-bottom: 1px solid var(--border-aged);
+    }
+
+    h1 {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      color: var(--text-light);
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem 1rem;
+    }
+
+    /* Album Grid */
+    .album-grid {
+      display: grid;
+      gap: 1.5rem;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      margin-bottom: 2rem;
+    }
+
+    @media (max-width: 768px) {
+      .album-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .album-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    @media (min-width: 1400px) {
+      .album-grid {
+        grid-template-columns: repeat(5, 1fr);
+      }
+    }
+
+    /* Album Card */
+    .album-card {
+      position: relative;
+      aspect-ratio: 1;
+      cursor: pointer;
+      overflow: hidden;
+      border: 2px solid var(--border-aged);
+      background-color: #2a1810;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      box-shadow:
+        inset 0 0 0 1px rgba(212, 165, 116, 0.1),
+        0 8px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .album-card:hover {
+      transform: scale(1.04);
+      box-shadow:
+        inset 0 0 0 1px rgba(212, 165, 116, 0.2),
+        0 15px 40px rgba(198, 134, 66, 0.3),
+        0 0 30px rgba(198, 134, 66, 0.2);
+    }
+
+    .album-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .album-card-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, 0.8) 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 1rem;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .album-card:hover .album-card-overlay {
+      opacity: 1;
+    }
+
+    .overlay-text {
+      color: var(--text-light);
+    }
+
+    .overlay-title {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+      line-height: 1.2;
+    }
+
+    .overlay-artist {
+      font-size: 0.85rem;
+      color: var(--accent-warm);
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: var(--bg-dark-overlay);
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 1;
+    }
+
+    .modal {
+      background-color: #2a2018;
+      border: 2px solid var(--border-aged);
+      max-width: 900px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+      display: flex;
+      gap: 2rem;
+      padding: 2rem;
+      border-radius: 2px;
+      animation: slideIn 0.3s ease;
+      transform: scale(1);
+      opacity: 1;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: scale(0.95);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .modal {
+        flex-direction: column;
+        gap: 1.5rem;
+        padding: 1.5rem;
+        width: 95%;
+      }
+    }
+
+    .modal-image {
+      flex-shrink: 0;
+      width: 300px;
+      aspect-ratio: 1;
+    }
+
+    @media (max-width: 768px) {
+      .modal-image {
+        width: 100%;
+        max-width: 300px;
+        margin: 0 auto;
+      }
+    }
+
+    .modal-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border: 1px solid var(--border-aged);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .modal-info h2 {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text-light);
+      margin-bottom: 0.5rem;
+      line-height: 1.2;
+    }
+
+    .modal-meta {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+
+    .modal-meta span {
+      display: inline-block;
+      margin-right: 1rem;
+    }
+
+    .modal-meta .genre {
+      color: var(--accent-warm);
+    }
+
+    .modal-description {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: #d0c4a8;
+      margin-bottom: 0.5rem;
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .modal-button {
+      flex: 1;
+      min-width: 160px;
+      padding: 0.9rem 1.5rem;
+      border: 2px solid var(--border-aged);
+      background-color: transparent;
+      color: var(--text-light);
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .modal-button::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-color: rgba(212, 165, 116, 0.1);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.3s ease;
+      z-index: -1;
+    }
+
+    .modal-button:hover {
+      border-color: var(--accent-warm);
+      box-shadow: 0 0 15px rgba(212, 165, 116, 0.3);
+    }
+
+    .modal-button:hover::before {
+      transform: scaleX(1);
+    }
+
+    .spotify-btn {
+      background-color: var(--spotify-green);
+      border-color: var(--spotify-green);
+      color: #000;
+    }
+
+    .spotify-btn:hover {
+      background-color: #1ed760;
+      border-color: #1ed760;
+      box-shadow: 0 0 20px rgba(29, 185, 84, 0.5);
+    }
+
+    .apple-btn {
+      background-color: #000000;
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+    }
+
+    .apple-btn:hover {
+      background-color: #1a1a1a;
+      border-color: #ffffff;
+      color: #ffffff;
+      box-shadow: 0 0 20px rgba(212, 165, 116, 0.5);
+    }
+
+    /* Track List */
+    .track-list-container {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease;
+    }
+
+    .track-list-container.active {
+      max-height: 600px;
+      overflow-y: auto;
+      margin-top: 1rem;
+    }
+
+    .track-list {
+      background-color: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border-aged);
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+
+    .track-item {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      line-height: 1.8;
+      color: #d0c4a8;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      border-bottom: 1px solid rgba(107, 83, 68, 0.3);
+      padding: 0.4rem 0;
+    }
+
+    .track-item:last-child {
+      border-bottom: none;
+    }
+
+    .track-number {
+      color: var(--text-muted);
+      min-width: 2rem;
+    }
+
+    .track-title {
+      flex: 1;
+      padding: 0 0.5rem;
+    }
+
+    .track-duration {
+      color: var(--text-muted);
+      min-width: 3rem;
+      text-align: right;
+    }
+
+    /* Close Button */
+    .modal-close {
+      position: absolute;
+      top: 1.5rem;
+      right: 1.5rem;
+      background: none;
+      border: none;
+      color: var(--text-light);
+      font-size: 1.8rem;
+      cursor: pointer;
+      width: 2rem;
+      height: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.3s ease, transform 0.3s ease;
+      z-index: 1001;
+    }
+
+    .modal-close:hover {
+      color: var(--accent-warm);
+      transform: scale(1.2);
+    }
+
+    /* Scrollbar styling */
+    .track-list-container::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .track-list-container::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .track-list-container::-webkit-scrollbar-thumb {
+      background: var(--accent-warm);
+      border-radius: 3px;
+    }
+
+    .track-list-container::-webkit-scrollbar-thumb:hover {
+      background: var(--accent-burnt);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <h1>MY RECORD SHELF</h1>
+    <p class="subtitle">Danthew's personal collection</p>
+  </header>
+
+  <!-- Album Grid -->
+  <div class="container">
+    <div class="album-grid" id="albumGrid"></div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modalOverlay">
+    <button class="modal-close" id="modalClose">&times;</button>
+    <div class="modal">
+      <div class="modal-image">
+        <img id="modalCover" src="" alt="">
+      </div>
+      <div class="modal-content">
+        <div class="modal-info">
+          <h2 id="modalTitle"></h2>
+          <div class="modal-meta">
+            <span id="modalArtist"></span>
+            <span id="modalYear"></span>
+            <span class="genre" id="modalGenre"></span>
+          </div>
+          <p class="modal-description" id="modalDescription"></p>
+        </div>
+        <div class="modal-buttons">
+          <button class="modal-button spotify-btn" id="spotifyLink">
+            ▶ PLAY ON SPOTIFY
+          </button>
+          <button class="modal-button apple-btn" id="appleMusicLink">
+            🎵 APPLE MUSIC
+          </button>
+          <button class="modal-button" id="trackListBtn">≡ TRACK LIST</button>
+        </div>
+        <div class="track-list-container" id="trackListContainer">
+          <div class="track-list" id="trackList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Album Data - Easy to edit and maintain
+    // ⚠️ CONFIGURACIÓN DE SPOTIFY:
+    // - spotifyUri: Abre la app NATIVA de Spotify (spotify:album:ID)
+    //   Si la app no está instalada, fallará a spotifyUrl automáticamente
+    // - spotifyUrl: URL web de respaldo (fallback)
+    // - cover: Portadas reales de los álbumes desde Spotify
+
+    const albums = [
+      {
+        title: "Abbey Road",
+        artist: "The Beatles",
+        year: 1969,
+        genre: "Rock",
+        description: "The Beatles' eleventh studio album, featuring iconic tracks and the famous Abbey Road crossing.",
+        cover: "https://i.scdn.co/image/ab67616d0000b273dc30583ba717007b00cceb25",
+        spotifyUri: "spotify:album:0ETFjACtuP2ADo6LFhL6HN",
+        spotifyUrl: "https://open.spotify.com/album/0ETFjACtuP2ADo6LFhL6HN",
+        appleMusicUrl: "https://music.apple.com/ar/album/abbey-road-2019-mix/1474815798",
+        tracks: [
+          { number: 1, title: "Come Together", duration: "4:19" },
+          { number: 2, title: "Something", duration: "3:02" },
+          { number: 3, title: "Maxwell's Silver Hammer", duration: "3:27" },
+          { number: 4, title: "Oh! Darling", duration: "3:26" },
+          { number: 5, title: "Octopus's Garden", duration: "2:51" },
+          { number: 6, title: "I Want You (She's So Heavy)", duration: "7:47" },
+          { number: 7, title: "Here Comes the Sun", duration: "3:06" },
+          { number: 8, title: "Because", duration: "2:45" },
+          { number: 9, title: "You Never Give Me Your Money", duration: "4:02" },
+          { number: 10, title: "Sun King", duration: "2:26" },
+          { number: 11, title: "Mean Mr. Mustard", duration: "1:06" },
+          { number: 12, title: "Polythene Pam", duration: "1:14" },
+          { number: 13, title: "She Came in Through the Bathroom Window", duration: "1:57" },
+          { number: 14, title: "Golden Slumbers", duration: "1:31" },
+          { number: 15, title: "Carry That Weight", duration: "1:36" },
+          { number: 16, title: "The End", duration: "2:18" },
+          { number: 17, title: "Her Majesty", duration: "0:23" }
+        ]
+      },
+      {
+        title: "Kind of Blue",
+        artist: "Miles Davis",
+        year: 1959,
+        genre: "Jazz",
+        description: "A masterpiece of modal jazz, Kind of Blue remains the best-selling jazz album of all time.",
+        cover: "https://i.scdn.co/image/ab67616d0000b273387a29c90de3b2398c29c34f",
+        spotifyUri: "spotify:album:1weenld61qoidwYuZ1GESA",
+        spotifyUrl: "https://open.spotify.com/album/1weenld61qoidwYuZ1GESA",
+        appleMusicUrl: "https://music.apple.com/ar/album/kind-of-blue/268443092",
+        tracks: [
+          { number: 1, title: "So What", duration: "9:22" },
+          { number: 2, title: "Freddie Freeloader", duration: "9:33" },
+          { number: 3, title: "Blue in Green", duration: "5:37" },
+          { number: 4, title: "All Blues", duration: "11:33" },
+          { number: 5, title: "Flamenco Sketches", duration: "9:25" }
+        ]
+      },
+      {
+        title: "Rumours",
+        artist: "Fleetwood Mac",
+        year: 1977,
+        genre: "Rock",
+        description: "A legendary album born from the turmoil of the band's relationships, featuring some of their greatest hits.",
+        cover: "https://i.scdn.co/image/ab67616d00001e0257df7ce0eac715cf70e519a7",
+        spotifyUri: "spotify:album:1bt6q2SruMsBtcerNVtpZB",
+        spotifyUrl: "https://open.spotify.com/album/1bt6q2SruMsBtcerNVtpZB",
+        appleMusicUrl: "https://music.apple.com/ar/album/rumours/594061854",
+        tracks: [
+          { number: 1, title: "Second Hand News", duration: "3:42" },
+          { number: 2, title: "Dreams", duration: "4:28" },
+          { number: 3, title: "Don't Stop", duration: "3:11" },
+          { number: 4, title: "Go Your Own Way", duration: "3:38" },
+          { number: 5, title: "Songbird", duration: "3:20" },
+          { number: 6, title: "The Chain", duration: "6:38" },
+          { number: 7, title: "You Make Loving Fun", duration: "3:20" },
+          { number: 8, title: "Did You Ever", duration: "3:06" },
+          { number: 9, title: "Gold Dust Woman", duration: "5:14" }
+        ]
+      },
+      {
+        title: "The Miseducation of Lauryn Hill",
+        artist: "Ms. Lauryn Hill",
+        year: 1998,
+        genre: "Hip-Hop/R&B",
+        description: "A groundbreaking debut album blending hip-hop, R&B, and soul with introspective lyrics.",
+        cover: "https://i.scdn.co/image/ab67616d0000b273e08b1250db5f75643f1508c9",
+        spotifyUri: "spotify:album:1BZoqf8Zje5nGdwZhOjAtD",
+        spotifyUrl: "https://open.spotify.com/album/1BZoqf8Zje5nGdwZhOjAtD",
+        appleMusicUrl: "https://music.apple.com/ar/album/the-miseducation-of-lauryn-hill/1276760743",
+        tracks: [
+          { number: 1, title: "Sherane Knows (Interlude)", duration: "0:56" },
+          { number: 2, title: "bitch, don't kill my vibe", duration: "4:41" },
+          { number: 3, title: "Backseat Freestyle", duration: "5:15" },
+          { number: 4, title: "The Art of Peer Pressure", duration: "5:36" },
+          { number: 5, title: "Money Trees", duration: "6:31" },
+          { number: 6, title: "Poetic Justice", duration: "4:56" },
+          { number: 7, title: "good kid", duration: "4:39" },
+          { number: 8, title: "m.A.A.d city", duration: "5:29" },
+          { number: 9, title: "Swimming Pools (Drank)", duration: "4:04" },
+          { number: 10, title: "Sing About Me, I'm Dying of Thirst", duration: "12:05" },
+          { number: 11, title: "Real Her", duration: "3:30" },
+          { number: 12, title: "Compton", duration: "3:20" }
+        ]
+      },
+      {
+        title: "Nevermind",
+        artist: "Nirvana",
+        year: 1991,
+        genre: "Rock",
+        description: "A landmark grunge album that brought alternative rock to the mainstream.",
+        cover: "https://i.scdn.co/image/ab67616d00001e02fbc71c99f9c1296c56dd51b6",
+        spotifyUri: "spotify:album:2UJcKiJxNryhL050F5Z1Fk",
+        spotifyUrl: "https://open.spotify.com/album/2UJcKiJxNryhL050F5Z1Fk",
+        appleMusicUrl: "https://music.apple.com/ar/album/nevermind/1440783617",
+        tracks: [
+          { number: 1, title: "Smells Like Teen Spirit", duration: "5:01" },
+          { number: 2, title: "Come as You Are", duration: "3:39" },
+          { number: 3, title: "Breed", duration: "3:01" },
+          { number: 4, title: "Lithium", duration: "4:16" },
+          { number: 5, title: "Polly", duration: "3:03" },
+          { number: 6, title: "Checklist", duration: "3:57" },
+          { number: 7, title: "Something in the Way", duration: "3:50" },
+          { number: 8, title: "Drain You", duration: "4:04" },
+          { number: 9, title: "Lounge Act", duration: "2:36" },
+          { number: 10, title: "Stay Away", duration: "3:32" },
+          { number: 11, title: "On a Plain", duration: "3:11" },
+          { number: 12, title: "Something in the Way", duration: "4:00" }
+        ]
+      },
+      {
+        title: "The Rise and Fall of Ziggy Stardust and the Spiders from Mars",
+        artist: "David Bowie",
+        year: 1972,
+        genre: "Rock",
+        description: "A concept album masterpiece that redefined rock music and launched David Bowie to superstardom.",
+        cover: "https://i.scdn.co/image/ab67616d00001e02c41f4e1133b0e6c5fcf58680",
+        spotifyUri: "spotify:album:48D1hRORqJq52qsnUYZX56",
+        spotifyUrl: "https://open.spotify.com/album/48D1hRORqJq52qsnUYZX56",
+        appleMusicUrl: "https://music.apple.com/ar/album/the-rise-and-fall-of-ziggy-stardust-and-the/1039796877",
+        tracks: [
+          { number: 1, title: "Five Years", duration: "4:44" },
+          { number: 2, title: "Soul Love", duration: "3:35" },
+          { number: 3, title: "Moonage Daydream", duration: "4:42" },
+          { number: 4, title: "Starman", duration: "4:10" },
+          { number: 5, title: "It Ain't Easy", duration: "3:51" },
+          { number: 6, title: "Lady Stardust", duration: "3:20" },
+          { number: 7, title: "Star", duration: "3:01" },
+          { number: 8, title: "Hang On to Yourself", duration: "2:32" },
+          { number: 9, title: "Ziggy Stardust", duration: "3:12" },
+          { number: 10, title: "Suffragette City", duration: "3:25" },
+          { number: 11, title: "Rock 'n' Roll Suicide", duration: "3:25" }
+        ]
+      },
+      {
+        title: "OK Computer",
+        artist: "Radiohead",
+        year: 1997,
+        genre: "Alternative Rock",
+        description: "A visionary album that pushed the boundaries of rock music and explored themes of alienation and technology.",
+        cover: "https://i.scdn.co/image/ab67616d0000b273c8b444df094279e70d0ed856",
+        spotifyUri: "spotify:album:6dVIqQ8qmQ5GBnJ9shOYGE",
+        spotifyUrl: "https://open.spotify.com/album/6dVIqQ8qmQ5GBnJ9shOYGE",
+        appleMusicUrl: "https://music.apple.com/ar/album/ok-computer-oknotok-1997-2017/1239489060",
+        tracks: [
+          { number: 1, title: "Airbag", duration: "4:44" },
+          { number: 2, title: "Paranoid Android", duration: "6:23" },
+          { number: 3, title: "Subterranean Homesick Alien", duration: "4:27" },
+          { number: 4, title: "Exit Music (For a Film)", duration: "4:24" },
+          { number: 5, title: "Let Down", duration: "4:58" },
+          { number: 6, title: "Karma Police", duration: "4:21" },
+          { number: 7, title: "Fitter Happier", duration: "3:51" },
+          { number: 8, title: "Electioneering", duration: "3:24" },
+          { number: 9, title: "Climbing Up the Walls", duration: "4:43" },
+          { number: 10, title: "No Surprises", duration: "3:47" },
+          { number: 11, title: "Lucky", duration: "4:19" },
+          { number: 12, title: "The Tourist", duration: "5:14" }
+        ]
+      },
+      {
+        title: "The Dark Side of the Moon",
+        artist: "Pink Floyd",
+        year: 1973,
+        genre: "Rock/Progressive",
+        description: "A monumental concept album exploring themes of death, time, and the human condition.",
+        cover: "https://i.scdn.co/image/ab67616d0000b273db216ca805faf5fe35df4ee6",
+        spotifyUri: "spotify:album:4LH4d3cOWNNsVw41Gqt2kv",
+        spotifyUrl: "https://open.spotify.com/album/4LH4d3cOWNNsVw41Gqt2kv",
+        appleMusicUrl: "https://music.apple.com/ar/album/the-dark-side-of-the-moon-50th-anniversary-remastered/1665303755",
+        tracks: [
+          { number: 1, title: "Speak to Me", duration: "1:30" },
+          { number: 2, title: "Breathe (In the Air)", duration: "3:00" },
+          { number: 3, title: "On the Run", duration: "3:36" },
+          { number: 4, title: "Time", duration: "7:05" },
+          { number: 5, title: "The Great Gig in the Sky", duration: "4:43" },
+          { number: 6, title: "Money", duration: "6:23" },
+          { number: 7, title: "Us and Them", duration: "7:41" },
+          { number: 8, title: "Any Colour You Like", duration: "3:24" },
+          { number: 9, title: "Brain Damage", duration: "3:49" },
+          { number: 10, title: "Eclipse", duration: "2:13" }
+        ]
+      },
+      {
+        title: "Aja",
+        artist: "Steely Dan",
+        year: 1977,
+        genre: "Rock/Jazz Fusion",
+        description: "A sophisticated album renowned for its impeccable production and intricate compositions.",
+        cover: "https://i.scdn.co/image/ab67616d0000b273cf39e4261576717ff4737bb6",
+        spotifyUri: "spotify:album:1hOK2ey9W76x9GnftSRgrw",
+        spotifyUrl: "https://open.spotify.com/album/1hOK2ey9W76x9GnftSRgrw",
+        appleMusicUrl: "https://music.apple.com/ar/album/aja/1706428459",
+        tracks: [
+          { number: 1, title: "Black Cow", duration: "4:52" },
+          { number: 2, title: "Rikki Don't Lose That Number", duration: "3:26" },
+          { number: 3, title: "Deacon Blues", duration: "6:29" },
+          { number: 4, title: "Peg", duration: "3:43" },
+          { number: 5, title: "East St. Louis Toodle-O", duration: "4:07" },
+          { number: 6, title: "Charlie Freak", duration: "3:47" },
+          { number: 7, title: "I Got the News", duration: "5:27" },
+          { number: 8, title: "Josie", duration: "4:04" }
+        ]
+      }
+    ];
+
+    // Initialize the app
+    function init() {
+      renderAlbumGrid();
+      setupModalListeners();
+    }
+
+    // Render album grid
+    function renderAlbumGrid() {
+      const grid = document.getElementById('albumGrid');
+      grid.innerHTML = '';
+
+      albums.forEach((album, index) => {
+        const card = document.createElement('div');
+        card.className = 'album-card';
+        card.innerHTML = `
+          <img src="${album.cover}" alt="${album.title}">
+          <div class="album-card-overlay">
+            <div class="overlay-text">
+              <div class="overlay-title">${album.title}</div>
+              <div class="overlay-artist">${album.artist}</div>
+            </div>
+          </div>
+        `;
+        card.addEventListener('click', () => openModal(index));
+        grid.appendChild(card);
+      });
+    }
+
+    // Open modal with album details
+    function openModal(albumIndex) {
+      const album = albums[albumIndex];
+      document.getElementById('modalTitle').textContent = album.title;
+      document.getElementById('modalArtist').textContent = album.artist;
+      document.getElementById('modalYear').textContent = `• ${album.year}`;
+      document.getElementById('modalGenre').textContent = album.genre;
+      document.getElementById('modalDescription').textContent = album.description;
+      document.getElementById('modalCover').src = album.cover;
+
+      // Intenta abrir la app nativa de Spotify con el URI
+      // Abre la app nativa de Spotify directamente sin generar pestañas
+      const spotifyLink = document.getElementById('spotifyLink');
+      spotifyLink.onclick = (e) => {
+        e.preventDefault();
+        // Abre directamente la app nativa con el URI de Spotify
+        window.location.href = album.spotifyUri;
+      };
+
+      // Abre Apple Music en nueva pestaña sin generar about:blank
+      const appleMusicLink = document.getElementById('appleMusicLink');
+      appleMusicLink.onclick = (e) => {
+        e.preventDefault();
+        // Usa la URL directa si está disponible, si no usa búsqueda
+        let appleMusicDestination = album.appleMusicUrl || `https://music.apple.com/search?term=${encodeURIComponent(album.artist + ' ' + album.title)}`;
+        // Crea un enlace temporal para evitar generar about:blank
+        const link = document.createElement('a');
+        link.href = appleMusicDestination;
+        link.target = '_blank';
+        link.click();
+      };
+
+      renderTrackList(album.tracks);
+
+      document.getElementById('modalOverlay').classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    // Close modal
+    function closeModal() {
+      document.getElementById('modalOverlay').classList.remove('active');
+      document.getElementById('trackListContainer').classList.remove('active');
+      document.body.style.overflow = 'auto';
+    }
+
+    // Render track list
+    function renderTrackList(tracks) {
+      const trackList = document.getElementById('trackList');
+      trackList.innerHTML = '';
+
+      tracks.forEach(track => {
+        const trackItem = document.createElement('div');
+        trackItem.className = 'track-item';
+        trackItem.innerHTML = `
+          <span class="track-number">${String(track.number).padStart(2, '0')}.</span>
+          <span class="track-title">${track.title}</span>
+          <span class="track-duration">${track.duration}</span>
+        `;
+        trackList.appendChild(trackItem);
+      });
+    }
+
+    // Toggle track list visibility
+    function toggleTrackList() {
+      document.getElementById('trackListContainer').classList.toggle('active');
+    }
+
+    // Setup modal event listeners
+    function setupModalListeners() {
+      const modalOverlay = document.getElementById('modalOverlay');
+      const modalClose = document.getElementById('modalClose');
+      const trackListBtn = document.getElementById('trackListBtn');
+
+      modalClose.addEventListener('click', closeModal);
+
+      modalOverlay.addEventListener('click', (e) => {
+        if (e.target === modalOverlay) {
+          closeModal();
+        }
+      });
+
+      trackListBtn.addEventListener('click', toggleTrackList);
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modalOverlay.classList.contains('active')) {
+          closeModal();
+        }
+      });
+    }
+
+    // Initialize when DOM is ready
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
