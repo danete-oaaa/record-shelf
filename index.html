@@ -1134,13 +1134,36 @@
         spotifyUri: "spotify:album:5Dbax7G8SWrP9xyzkOvy2F",
         spotifyUrl: "https://open.spotify.com/album/5Dbax7G8SWrP9xyzkOvy2F",
         appleMusicUrl: "https://music.apple.com/us/album/the-wall/1065975633",
-        tracks: [
-          { number: 1, title: "In the Flesh?", duration: "3:20" },
-          { number: 2, title: "The Thin Ice", duration: "2:32" },
-          { number: 3, title: "The Happiest Days of Our Lives", duration: "3:26" },
-          { number: 4, title: "Mother", duration: "5:39" },
-          { number: 5, title: "Goodbye Blue Sky", duration: "4:45" }
-        ]
+tracks: [
+  { section: "PART 1" },
+  { number: 1, title: "In the Flesh?", duration: "5:18" },
+  { number: 2, title: "The Thin Ice", duration: "2:26" },
+  { number: 3, title: "Another Brick in the Wall, Pt. 1", duration: "3:11" },
+  { number: 4, title: "The Happiest Days of Our Lives", duration: "1:51" },
+  { number: 5, title: "Another Brick in the Wall, Pt. 2", duration: "3:58" },
+  { number: 6, title: "Mother", duration: "5:14" },
+  { number: 7, title: "Goodbye Blue Sky", duration: "2:47" },
+  { number: 8, title: "Empty Spaces", duration: "2:07" },
+  { number: 9, title: "Young Lust", duration: "3:29" },
+  { number: 10, title: "One of My Turns", duration: "3:36" },
+  { number: 11, title: "Don't Leave Me Now", duration: "4:15" },
+  { number: 12, title: "Another Brick in the Wall, Pt. 3", duration: "1:14" },
+  { number: 13, title: "Goodbye Cruel World", duration: "1:14" },
+  { section: "PART 2" },
+  { number: 14, title: "Hey You", duration: "4:39" },
+  { number: 15, title: "Is There Anybody Out There?", duration: "2:41" },
+  { number: 16, title: "Nobody Home", duration: "3:22" },
+  { number: 17, title: "Vera", duration: "1:33" },
+  { number: 18, title: "Bring the Boys Back Home", duration: "1:27" },
+  { number: 19, title: "Comfortably Numb", duration: "6:22" },
+  { number: 20, title: "The Show Must Go On", duration: "1:36" },
+  { number: 21, title: "In the Flesh", duration: "4:15" },
+  { number: 22, title: "Run Like Hell", duration: "4:23" },
+  { number: 23, title: "Waiting for the Worms", duration: "3:57" },
+  { number: 24, title: "Stop", duration: "0:30" },
+  { number: 25, title: "The Trial", duration: "5:18" },
+  { number: 26, title: "Outside the Wall", duration: "1:43" }
+]
       },
       {
         title: "Exodus",
@@ -1346,16 +1369,24 @@
       trackList.innerHTML = '';
 
       tracks.forEach(track => {
-        const trackItem = document.createElement('div');
-        trackItem.className = 'track-item';
-        trackItem.innerHTML = `
-          <span class="track-number">${String(track.number).padStart(2, '0')}.</span>
-          <span class="track-title">${track.title}</span>
-          <span class="track-duration">${track.duration}</span>
-        `;
-        trackList.appendChild(trackItem);
-      });
+         if (track.section) {
+      const sectionItem = document.createElement('div');
+      sectionItem.style.cssText = 'font-weight: 700; color: var(--accent-warm); margin-top: 1rem; margin-bottom: 0.5rem; font-size: 0.9rem; letter-spacing: 0.05em; text-transform: uppercase;';
+      sectionItem.textContent = track.section;
+      trackList.appendChild(sectionItem);
+    } else {
+      // Track normal
+      const trackItem = document.createElement('div');
+      trackItem.className = 'track-item';
+      trackItem.innerHTML = `
+        <span class="track-number">${String(track.number).padStart(2, '0')}.</span>
+        <span class="track-title">${track.title}</span>
+        <span class="track-duration">${track.duration}</span>
+      `;
+      trackList.appendChild(trackItem);
     }
+  });
+}
 
     // Toggle track list visibility
     function toggleTrackList() {
