@@ -1,0 +1,1514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Record Shelf</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      /* Colors */
+      --bg-primary: #1a1008;
+      --bg-dark-overlay: rgba(0, 0, 0, 0.8);
+      --accent-warm: #d4a574;
+      --accent-burnt: #c68642;
+      --text-light: #f5e6c8;
+      --text-muted: #b8956a;
+      --spotify-green: #1DB954;
+      --border-aged: #6b5344;
+
+      /* Typography */
+      --font-display: 'Playfair Display', serif;
+      --font-mono: 'DM Mono', monospace;
+      --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      font-family: var(--font-body);
+      color: var(--text-light);
+      background-color: var(--bg-primary);
+      overflow-x: hidden;
+    }
+
+    body {
+      background-image:
+        url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" result="noise" /></filter><rect width="100" height="100" fill="%231a1008" /><rect width="100" height="100" fill="%23000000" opacity="0.02" filter="url(%23noise)" /></svg>');
+      background-size: 100px 100px;
+    }
+
+    header {
+      text-align: center;
+      padding: 3rem 1rem 2rem;
+      border-bottom: 1px solid var(--border-aged);
+    }
+
+    h1 {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      color: var(--text-light);
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem 1rem;
+    }
+
+    /* Album Grid */
+    .album-grid {
+      display: grid;
+      gap: 1.5rem;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      margin-bottom: 2rem;
+    }
+
+    @media (max-width: 768px) {
+      .album-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .album-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    @media (min-width: 1400px) {
+      .album-grid {
+        grid-template-columns: repeat(5, 1fr);
+      }
+    }
+
+    /* Album Card */
+    .album-card {
+      position: relative;
+      aspect-ratio: 1;
+      cursor: pointer;
+      overflow: hidden;
+      border: 2px solid var(--border-aged);
+      background-color: #2a1810;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      box-shadow:
+        inset 0 0 0 1px rgba(212, 165, 116, 0.1),
+        0 8px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .album-card:hover {
+      transform: scale(1.04);
+      box-shadow:
+        inset 0 0 0 1px rgba(212, 165, 116, 0.2),
+        0 15px 40px rgba(198, 134, 66, 0.3),
+        0 0 30px rgba(198, 134, 66, 0.2);
+    }
+
+    .album-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .album-card-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, 0.8) 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 1rem;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .album-card:hover .album-card-overlay {
+      opacity: 1;
+    }
+
+    .overlay-text {
+      color: var(--text-light);
+    }
+
+    .overlay-title {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+      line-height: 1.2;
+    }
+
+    .overlay-artist {
+      font-size: 0.85rem;
+      color: var(--accent-warm);
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: var(--bg-dark-overlay);
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 1;
+    }
+
+    .modal {
+      background-color: #2a2018;
+      border: 2px solid var(--border-aged);
+      max-width: 900px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+      display: flex;
+      gap: 2rem;
+      padding: 2rem;
+      border-radius: 2px;
+      animation: slideIn 0.3s ease;
+      transform: scale(1);
+      opacity: 1;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: scale(0.95);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .modal {
+        flex-direction: column;
+        gap: 1.5rem;
+        padding: 1.5rem;
+        width: 95%;
+      }
+    }
+
+    .modal-image {
+      flex-shrink: 0;
+      width: 300px;
+      aspect-ratio: 1;
+    }
+
+    @media (max-width: 768px) {
+      .modal-image {
+        width: 100%;
+        max-width: 300px;
+        margin: 0 auto;
+      }
+    }
+
+    .modal-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border: 1px solid var(--border-aged);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .modal-info h2 {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text-light);
+      margin-bottom: 0.5rem;
+      line-height: 1.2;
+    }
+
+    .modal-meta {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+
+    .modal-meta span {
+      display: inline-block;
+      margin-right: 1rem;
+    }
+
+    .modal-meta .genre {
+      color: var(--accent-warm);
+    }
+
+    .modal-description {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: #d0c4a8;
+      margin-bottom: 0.5rem;
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .modal-button {
+      flex: 1;
+      min-width: 160px;
+      padding: 0.9rem 1.5rem;
+      border: 2px solid var(--border-aged);
+      background-color: transparent;
+      color: var(--text-light);
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .modal-button::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-color: rgba(212, 165, 116, 0.1);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.3s ease;
+      z-index: -1;
+    }
+
+    .modal-button:hover {
+      border-color: var(--accent-warm);
+      box-shadow: 0 0 15px rgba(212, 165, 116, 0.3);
+    }
+
+    .modal-button:hover::before {
+      transform: scaleX(1);
+    }
+
+    .spotify-btn {
+      background-color: var(--spotify-green);
+      border-color: var(--spotify-green);
+      color: #000;
+    }
+
+    .spotify-btn:hover {
+      background-color: #1ed760;
+      border-color: #1ed760;
+      box-shadow: 0 0 20px rgba(29, 185, 84, 0.5);
+    }
+
+    .apple-btn {
+      background-color: #000000;
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+    }
+
+    .apple-btn:hover {
+      background-color: #1a1a1a;
+      border-color: #ffffff;
+      color: #ffffff;
+      box-shadow: 0 0 20px rgba(212, 165, 116, 0.5);
+    }
+
+    .youtube-btn {
+      background-color: #FF0000;
+      border-color: #FF0000;
+      color: #fff;
+    }
+
+    .youtube-btn:hover {
+      background-color: #cc0000;
+      border-color: #cc0000;
+      box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+    }
+
+    /* Track List */
+    .track-list-container {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease;
+    }
+
+    .track-list-container.active {
+      max-height: 600px;
+      overflow-y: auto;
+      margin-top: 1rem;
+    }
+
+    .track-list {
+      background-color: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border-aged);
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+
+    .track-item {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      line-height: 1.8;
+      color: #d0c4a8;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      border-bottom: 1px solid rgba(107, 83, 68, 0.3);
+      padding: 0.4rem 0;
+    }
+
+    .track-item:last-child {
+      border-bottom: none;
+    }
+
+    .track-number {
+      color: var(--text-muted);
+      min-width: 2rem;
+    }
+
+    .track-title {
+      flex: 1;
+      padding: 0 0.5rem;
+    }
+
+    .track-duration {
+      color: var(--text-muted);
+      min-width: 3rem;
+      text-align: right;
+    }
+
+    /* Close Button */
+    .modal-close {
+      position: absolute;
+      top: 1.5rem;
+      right: 1.5rem;
+      background: none;
+      border: none;
+      color: var(--text-light);
+      font-size: 1.8rem;
+      cursor: pointer;
+      width: 2rem;
+      height: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.3s ease, transform 0.3s ease;
+      z-index: 1001;
+    }
+
+    .modal-close:hover {
+      color: var(--accent-warm);
+      transform: scale(1.2);
+    }
+
+    /* Scrollbar styling */
+    .track-list-container::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .track-list-container::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .track-list-container::-webkit-scrollbar-thumb {
+      background: var(--accent-warm);
+      border-radius: 3px;
+    }
+
+    .track-list-container::-webkit-scrollbar-thumb:hover {
+      background: var(--accent-burnt);
+    }
+
+    /* Analysis Container */
+    .analysis-container {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease;
+    }
+
+    .analysis-container.active {
+      max-height: 600px;
+      overflow-y: auto;
+      margin-top: 1rem;
+    }
+
+    .analysis-content {
+      background-color: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border-aged);
+      padding: 1.5rem;
+      margin-top: 1rem;
+      line-height: 1.8;
+      color: #d0c4a8;
+      font-size: 0.95rem;
+    }
+
+    .analysis-content p {
+      margin-bottom: 1rem;
+    }
+
+    .analysis-content p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Scrollbar for analysis */
+    .analysis-container::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .analysis-container::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .analysis-container::-webkit-scrollbar-thumb {
+      background: var(--accent-warm);
+      border-radius: 3px;
+    }
+
+    .analysis-container::-webkit-scrollbar-thumb:hover {
+      background: var(--accent-burnt);
+    }
+
+    /* Sort Banner */
+    .sort-banner {
+      background-color: rgba(26, 16, 8, 0.8);
+      border-bottom: 1px solid var(--border-aged);
+      padding: 1.5rem 1rem;
+      margin-top: 1rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+    }
+
+    .sort-button {
+      background: none;
+      border: 2px solid var(--accent-warm);
+      color: var(--text-light);
+      padding: 0.6rem 1.2rem;
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .sort-button::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-color: var(--accent-warm);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.3s ease;
+      z-index: -1;
+    }
+
+    .sort-button:hover {
+      color: var(--bg-primary);
+      border-color: var(--accent-warm);
+      box-shadow: 0 0 15px rgba(212, 165, 116, 0.3);
+    }
+
+    .sort-button:hover::before {
+      transform: scaleX(1);
+    }
+
+    .sort-dropdown {
+      background-color: var(--bg-primary);
+      border: 2px solid var(--accent-warm);
+      border-left: none;
+      z-index: 100;
+      max-width: 0;
+      overflow: hidden;
+      transition: max-width 0.4s ease;
+      display: flex;
+    }
+
+    .sort-dropdown.active {
+      max-width: 1000px;
+    }
+
+    .sort-options {
+      display: flex;
+      flex-direction: row;
+      gap: 0;
+      padding: 0;
+      flex-wrap: nowrap;
+    }
+
+    .sort-option {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      padding: 0.6rem 1.2rem;
+      transition: all 0.2s ease;
+      border-right: 1px solid rgba(107, 83, 68, 0.3);
+      background-color: var(--bg-primary);
+      white-space: nowrap;
+      height: 100%;
+    }
+
+    .sort-option:last-child {
+      border-right: none;
+    }
+
+    .sort-option:hover {
+      background-color: rgba(212, 165, 116, 0.1);
+      color: var(--accent-warm);
+    }
+
+    .sort-option input[type="radio"] {
+      margin-right: 0.6rem;
+      cursor: pointer;
+      width: 16px;
+      height: 16px;
+      accent-color: var(--accent-warm);
+    }
+
+    .sort-option label {
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: 1024px) {
+      .sort-dropdown {
+        max-width: 600px;
+      }
+
+      .sort-dropdown.active {
+        max-width: 600px;
+      }
+
+      .sort-option {
+        padding: 0.6rem 1rem;
+        font-size: 0.8rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .sort-banner {
+        padding: 1rem;
+        flex-direction: column;
+      }
+
+      .sort-button {
+        width: 100%;
+        margin-bottom: 0.5rem;
+      }
+
+      .sort-dropdown {
+        border-left: 2px solid var(--accent-warm);
+        border-top: none;
+        width: 100%;
+        max-width: none;
+      }
+
+      .sort-dropdown.active {
+        max-width: none;
+      }
+
+      .sort-options {
+        flex-direction: column;
+        width: 100%;
+      }
+
+      .sort-option {
+        border-right: none;
+        border-bottom: 1px solid rgba(107, 83, 68, 0.3);
+        padding: 0.8rem 1rem;
+        width: 100%;
+      }
+
+      .sort-option:last-child {
+        border-bottom: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <h1>MY RECORD SHELF</h1>
+    <p class="subtitle">Danthew's personal collection</p>
+  </header>
+
+  <!-- Sort Banner -->
+  <div class="sort-banner">
+    <button class="sort-button" id="sortBtn">≡ ORDENAR</button>
+    <div class="sort-dropdown" id="sortDropdown">
+      <div class="sort-options">
+        <div class="sort-option">
+          <input type="radio" id="sortDefault" name="sort" value="default" checked>
+          <label for="sortDefault">Orden original</label>
+        </div>
+        <div class="sort-option">
+          <input type="radio" id="sortAlphabetical" name="sort" value="alphabetical">
+          <label for="sortAlphabetical">Nombre A-Z</label>
+        </div>
+        <div class="sort-option">
+          <input type="radio" id="sortArtist" name="sort" value="artist">
+          <label for="sortArtist">Artista A-Z</label>
+        </div>
+        <div class="sort-option">
+          <input type="radio" id="sortYear" name="sort" value="year">
+          <label for="sortYear">Año (antiguo a nuevo)</label>
+        </div>
+        <div class="sort-option">
+          <input type="radio" id="sortYearDesc" name="sort" value="yearDesc">
+          <label for="sortYearDesc">Año (nuevo a antiguo)</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Album Grid -->
+  <div class="container">
+    <div class="album-grid" id="albumGrid"></div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modalOverlay">
+    <button class="modal-close" id="modalClose">&times;</button>
+    <div class="modal">
+      <div class="modal-image">
+        <img id="modalCover" src="" alt="">
+      </div>
+      <div class="modal-content">
+        <div class="modal-info">
+          <h2 id="modalTitle"></h2>
+          <div class="modal-meta">
+            <span id="modalArtist"></span>
+            <span id="modalYear"></span>
+            <span class="genre" id="modalGenre"></span>
+          </div>
+          <p class="modal-description" id="modalDescription"></p>
+        </div>
+        <div class="modal-buttons">
+          <button class="modal-button spotify-btn" id="spotifyLink">
+            ▶ SPOTIFY
+          </button>
+          <button class="modal-button apple-btn" id="appleMusicLink">
+            🎵 APPLE MUSIC
+          </button>
+          <button class="modal-button youtube-btn" id="youtubeLink">
+            ▶ YOUTUBE
+          </button>
+          <button class="modal-button" id="trackListBtn">≡ TRACK LIST</button>
+          <button class="modal-button" id="analysisBtn">📝 ANÁLISIS</button>
+        </div>
+        <div class="track-list-container" id="trackListContainer">
+          <div class="track-list" id="trackList"></div>
+        </div>
+        <div class="analysis-container" id="analysisContainer">
+          <div class="analysis-content" id="analysisContent"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const albums = [
+      {title: "Abbey Road", artist: "The Beatles", year: 1969, genre: "Rock", description: "The Beatles' eleventh studio album, featuring iconic tracks and the famous Abbey Road crossing.", cover: "https://i.scdn.co/image/ab67616d0000b273dc30583ba717007b00cceb25", analysis: "pendiente", spotifyUri: "spotify:album:0ETFjACtuP2ADo6LFhL6HN", spotifyUrl: "https://open.spotify.com/album/0ETFjACtuP2ADo6LFhL6HN", appleMusicUrl: "https://music.apple.com/ar/album/abbey-road-2019-mix/1474815798", youtubeUrl: "https://www.youtube.com/watch?v=SQgDYT836Kk", tracks: [
+        {number: 1, title: "Come Together", duration: "4:19"},
+        {number: 2, title: "Something", duration: "3:02"},
+        {number: 3, title: "Maxwell's Silver Hammer", duration: "3:27"},
+        {number: 4, title: "Oh! Darling", duration: "3:26"},
+        {number: 5, title: "Octopus's Garden", duration: "2:51"},
+        {number: 6, title: "I Want You (She's So Heavy)", duration: "7:47"},
+        {number: 7, title: "Here Comes the Sun", duration: "3:06"},
+        {number: 8, title: "Because", duration: "2:45"},
+        {number: 9, title: "You Never Give Me Your Money", duration: "4:02"},
+        {number: 10, title: "Sun King", duration: "2:26"},
+        {number: 11, title: "Mean Mr. Mustard", duration: "1:06"},
+        {number: 12, title: "Polythene Pam", duration: "1:14"},
+        {number: 13, title: "She Came in Through the Bathroom Window", duration: "1:57"},
+        {number: 14, title: "Golden Slumbers", duration: "1:31"},
+        {number: 15, title: "Carry That Weight", duration: "1:36"},
+        {number: 16, title: "The End", duration: "2:18"},
+        {number: 17, title: "Her Majesty", duration: "0:23"}
+      ]},
+      {title: "Kind of Blue", artist: "Miles Davis", year: 1959, genre: "Jazz", description: "A masterpiece of modal jazz, Kind of Blue remains the best-selling jazz album of all time.", cover: "https://i.scdn.co/image/ab67616d0000b273387a29c90de3b2398c29c34f", analysis: "pendiente", spotifyUri: "spotify:album:1weenld61qoidwYuZ1GESA", spotifyUrl: "https://open.spotify.com/album/1weenld61qoidwYuZ1GESA", appleMusicUrl: "https://music.apple.com/ar/album/kind-of-blue/268443092", youtubeUrl: "https://www.youtube.com/watch?v=ylXk1LBvIqU&list=PLrhkpF1bKMG_D2sxTpxG63WGmIxYGB-Jt", tracks: [
+        {number: 1, title: "So What", duration: "9:07"},
+        {number: 2, title: "Freddie Freeloader", duration: "9:48"},
+        {number: 3, title: "Blue in Green", duration: "5:13"},
+        {number: 4, title: "All Blues", duration: "11:32"},
+        {number: 5, title: "Flamenco Sketches", duration: "9:21"}
+      ]},
+      {title: "Rumours", artist: "Fleetwood Mac", year: 1977, genre: "Rock", description: "A legendary album born from the turmoil of the band's relationships, featuring some of their greatest hits.", cover: "https://i.scdn.co/image/ab67616d00001e0257df7ce0eac715cf70e519a7", analysis: "pendiente", spotifyUri: "spotify:album:1bt6q2SruMsBtcerNVtpZB", spotifyUrl: "https://open.spotify.com/album/1bt6q2SruMsBtcerNVtpZB", appleMusicUrl: "https://music.apple.com/ar/album/rumours/594061854", youtubeUrl: "https://www.youtube.com/watch?v=SLlYUlS_Awo&list=OLAK5uy_nVaA0orpORfdRjNAGyfMZhGkvrYkkgMHI", tracks: [
+        {number: 1, title: "Second Hand News - 2004 Remaster", duration: "2:56"},
+        {number: 2, title: "Dreams - 2004 Remaster", duration: "4:17"},
+        {number: 3, title: "Never Going Back Again - 2004 Remaster", duration: "2:14"},
+        {number: 4, title: "Don't Stop - 2004 Remaster", duration: "3:13"},
+        {number: 5, title: "Go Your Own Way - 2004 Remaster", duration: "3:43"},
+        {number: 6, title: "Songbird - 2004 Remaster", duration: "3:20"},
+        {number: 7, title: "The Chain - 2004 Remaster", duration: "4:29"},
+        {number: 8, title: "You Make Loving Fun - 2004 Remaster", duration: "3:33"},
+        {number: 9, title: "I Don't Want to Know - 2004 Remaster", duration: "3:16"},
+        {number: 10, title: "Oh Daddy - 2004 Remaster", duration: "3:56"},
+        {number: 11, title: "Gold Dust Woman - 2004 Remaster", duration: "4:55"}
+      ]},
+      {title: "The Miseducation of Lauryn Hill", artist: "Ms. Lauryn Hill", year: 1998, genre: "Hip-Hop/R&B", description: "A groundbreaking debut album blending hip-hop, R&B, and soul with introspective lyrics.", cover: "https://i.scdn.co/image/ab67616d0000b273e08b1250db5f75643f1508c9", analysis: "pendiente", spotifyUri: "spotify:album:1BZoqf8Zje5nGdwZhOjAtD", spotifyUrl: "https://open.spotify.com/album/1BZoqf8Zje5nGdwZhOjAtD", appleMusicUrl: "https://music.apple.com/ar/album/the-miseducation-of-lauryn-hill/1276760743", youtubeUrl: "https://www.youtube.com/watch?v=geM9cVux28o", tracks: [
+        {number: 1, title: "Intro", duration: "0:47"},
+        {number: 2, title: "Lost Ones", duration: "5:33"},
+        {number: 3, title: "Ex-Factor", duration: "5:26"},
+        {number: 4, title: "To Zion (feat. Carlos Santana)", duration: "6:09"},
+        {number: 5, title: "Doo Wop (That Thing)", duration: "5:20"},
+        {number: 6, title: "Superstar", duration: "4:57"},
+        {number: 7, title: "Final Hour", duration: "4:16"},
+        {number: 8, title: "When It Hurts so Bad", duration: "6:42"},
+        {number: 9, title: "I Used to Love Him (feat. Mary J. Blige)", duration: "5:39"},
+        {number: 10, title: "Forgive Them Father", duration: "5:15"},
+        {number: 11, title: "Every Ghetto, Every City", duration: "5:14"},
+        {number: 12, title: "Nothing Even Matters (feat. D'Angelo)", duration: "5:50"},
+        {number: 13, title: "Everything is Everything", duration: "4:53"},
+        {number: 14, title: "The Miseducation of Lauryn Hill", duration: "3:55"},
+        {number: 15, title: "Can't Take My Eyes Off of You - (I Love You Baby)", duration: "3:41"},
+        {number: 16, title: "Tell Him", duration: "4:40"}
+      ]},
+      {title: "Nevermind", artist: "Nirvana", year: 1991, genre: "Rock", description: "A landmark grunge album that brought alternative rock to the mainstream.", cover: "https://i.scdn.co/image/ab67616d00001e02fbc71c99f9c1296c56dd51b6", analysis: "pendiente", spotifyUri: "spotify:album:2UJcKiJxNryhL050F5Z1Fk", spotifyUrl: "https://open.spotify.com/album/2UJcKiJxNryhL050F5Z1Fk", appleMusicUrl: "https://music.apple.com/ar/album/nevermind/1440783617", youtubeUrl: "https://www.youtube.com/watch?v=DOn1ABbJKiw", tracks: [
+        {number: 1, title: "Smells Like Teen Spirit", duration: "5:01"},
+        {number: 2, title: "In Bloom", duration: "4:15"},
+        {number: 3, title: "Come As You Are", duration: "3:38"},
+        {number: 4, title: "Breed", duration: "3:04"},
+        {number: 5, title: "Lithium", duration: "4:17"},
+        {number: 6, title: "Polly", duration: "2:53"},
+        {number: 7, title: "Territorial Pissings", duration: "2:22"},
+        {number: 8, title: "Drain You", duration: "3:43"},
+        {number: 9, title: "Lounge Act", duration: "2:16"},
+        {number: 10, title: "Stay Away", duration: "3:31"},
+        {number: 11, title: "On A Plain", duration: "3:14"},
+        {number: 12, title: "Something In The Way", duration: "3:52"},
+        {number: 13, title: "Endless, Nameless", duration: "6:43"}
+      ]},
+      {title: "The Rise and Fall of Ziggy Stardust and the Spiders from Mars", artist: "David Bowie", year: 1972, genre: "Rock", description: "A concept album masterpiece that redefined rock music and launched David Bowie to superstardom.", cover: "https://i.scdn.co/image/ab67616d00001e02c41f4e1133b0e6c5fcf58680", analysis: "pendiente", spotifyUri: "spotify:album:48D1hRORqJq52qsnUYZX56", spotifyUrl: "https://open.spotify.com/album/48D1hRORqJq52qsnUYZX56", appleMusicUrl: "https://music.apple.com/ar/album/the-rise-and-fall-of-ziggy-stardust-and-the/1039796877", youtubeUrl: "https://www.youtube.com/watch?v=sX99e5QEAEg", tracks: [
+        {number: 1, title: "Five Years - 2012 Remaster", duration: "4:43"},
+        {number: 2, title: "Soul Love - 2012 Remaster", duration: "3:54"},
+        {number: 3, title: "Moonage Daydream - 2012 Remaster", duration: "4:39"},
+        {number: 4, title: "Starman - 2012 Remaster", duration: "4:14"},
+        {number: 5, title: "It Ain't Easy - 2012 Remaster", duration: "2:57"},
+        {number: 6, title: "Lady Stardust - 2012 Remaster", duration: "3:21"},
+        {number: 7, title: "Star - 2012 Remaster", duration: "2:47"},
+        {number: 8, title: "Hang on to Yourself - 2012 Remaster", duration: "2:39"},
+        {number: 9, title: "Ziggy Stardust - 2012 Remaster", duration: "3:13"},
+        {number: 10, title: "Suffragette City - 2012 Remaster", duration: "3:28"},
+        {number: 11, title: "Rock 'n' Roll Suicide - 2012 Remaster", duration: "2:58"}
+      ]},
+      {title: "Californication", artist: "Red Hot Chili Peppers", year: 1999, genre: "Alternative Rock / Funk Rock", description: "El séptimo álbum de los Red Hot Chili Peppers, con John Frusciante de regreso en la guitarra. Su disco más vendido en el mundo, con singles icónicos como 'Scar Tissue', 'Otherside' y 'Californication'.", cover: "https://i.scdn.co/image/ab67616d00001e0294d08ab63e57b0cae74e8595", analysis: "pendiente", spotifyUri: "spotify:album:2Y9IRtehByVkegoD7TcLfi", spotifyUrl: "https://open.spotify.com/album/2Y9IRtehByVkegoD7TcLfi", appleMusicUrl: "https://music.apple.com/us/album/californication-deluxe-edition/948446127", youtubeUrl: "https://www.youtube.com/watch?v=RXWIitU8V0A", tracks: [
+        {number: 1, title: "Around the World", duration: "3:58"},
+        {number: 2, title: "Parallel Universe", duration: "4:29"},
+        {number: 3, title: "Scar Tissue", duration: "3:35"},
+        {number: 4, title: "Otherside", duration: "4:15"},
+        {number: 5, title: "Get on Top", duration: "3:18"},
+        {number: 6, title: "Californication", duration: "5:29"},
+        {number: 7, title: "Easily", duration: "3:51"},
+        {number: 8, title: "Porcelain", duration: "2:43"},
+        {number: 9, title: "Emit Remmus", duration: "4:00"},
+        {number: 10, title: "I Like Dirt", duration: "2:37"},
+        {number: 11, title: "This Velvet Glove", duration: "3:45"},
+        {number: 12, title: "Savior", duration: "4:52"},
+        {number: 13, title: "Purple Stain", duration: "4:13"},
+        {number: 14, title: "Right on Time", duration: "1:52"},
+        {number: 15, title: "Road Trippin'", duration: "3:24"},
+        {number: 16, title: "Fat Dance - 2006 Remaster", duration: "3:40"},
+        {number: 17, title: "Over Funk - 2006 Remaster", duration: "2:58"},
+        {number: 18, title: "Quixoticelixer - 2006 Remaster", duration: "4:48"}
+      ]},
+      {title: "Master of Reality", artist: "Black Sabbath", year: 1971, genre: "Heavy Metal / Doom Rock", description: "Clásicos como 'Sweet Leaf', 'Children of the Grave' e 'Into the Void', sin lugar a duda es top.", cover: "https://i.scdn.co/image/ab67616d00001e02b7ec2b4b9c76b3b737990a42", analysis: "pendiente", spotifyUri: "spotify:album:3kBG6q0aXKxzn01wKTwZr5", spotifyUrl: "https://open.spotify.com/album/3kBG6q0aXKxzn01wKTwZr5", appleMusicUrl: "https://music.apple.com/us/album/master-of-reality-2009-remastered-version/1193822439", youtubeUrl: "https://www.youtube.com/watch?v=-8rj7dH5at4", tracks: [{number: 1, title: "Sweet Leaf", duration: "5:03"}, {number: 2, title: "After Forever", duration: "5:23"}, {number: 3, title: "Embryo", duration: "0:27"}, {number: 4, title: "Children of the Grave", duration: "5:14"}, {number: 5, title: "Orchid", duration: "1:30"}, {number: 6, title: "Lord of This World", duration: "5:22"}, {number: 7, title: "Solitude", duration: "5:01"}, {number: 8, title: "Into the Void", duration: "6:12"}]},
+      {title: "OK Computer", artist: "Radiohead", year: 1997, genre: "Alternative Rock", description: "A visionary album that pushed the boundaries of rock music and explored themes of alienation and technology.", cover: "https://i.scdn.co/image/ab67616d0000b273c8b444df094279e70d0ed856", analysis: "pendiente", spotifyUri: "spotify:album:6dVIqQ8qmQ5GBnJ9shOYGE", spotifyUrl: "https://open.spotify.com/album/6dVIqQ8qmQ5GBnJ9shOYGE", appleMusicUrl: "https://music.apple.com/ar/album/ok-computer-oknotok-1997-2017/1239489060", youtubeUrl: "https://www.youtube.com/watch?v=TneMW2fd0dc", tracks: [
+        {number: 1, title: "Airbag", duration: "4:47"},
+        {number: 2, title: "Paranoid Android", duration: "6:27"},
+        {number: 3, title: "Subterranean Homesick Alien", duration: "4:27"},
+        {number: 4, title: "Exit Music (For a Film)", duration: "4:27"},
+        {number: 5, title: "Let Down", duration: "4:59"},
+        {number: 6, title: "Karma Police", duration: "4:24"},
+        {number: 7, title: "Fitter Happier", duration: "1:57"},
+        {number: 8, title: "Electioneering", duration: "3:50"},
+        {number: 9, title: "Climbing Up the Walls", duration: "4:45"},
+        {number: 10, title: "No Surprises", duration: "3:49"},
+        {number: 11, title: "Lucky", duration: "4:18"},
+        {number: 12, title: "The Tourist", duration: "5:26"}
+      ]},
+      {title: "The Dark Side of the Moon", artist: "Pink Floyd", year: 1973, genre: "Rock/Progressive", description: "A monumental concept album exploring themes of death, time, and the human condition.", cover: "https://i.scdn.co/image/ab67616d0000b273db216ca805faf5fe35df4ee6", analysis: "pendiente", spotifyUri: "spotify:album:4LH4d3cOWNNsVw41Gqt2kv", spotifyUrl: "https://open.spotify.com/album/4LH4d3cOWNNsVw41Gqt2kv", appleMusicUrl: "https://music.apple.com/ar/album/the-dark-side-of-the-moon-50th-anniversary-remastered/1665303755", youtubeUrl: "https://www.youtube.com/watch?v=cuKVhVb8VRw", tracks: [
+        {number: 1, title: "Speak to Me", duration: "1:04"},
+        {number: 2, title: "Breathe (In the Air)", duration: "2:49"},
+        {number: 3, title: "On the Run", duration: "3:36"},
+        {number: 4, title: "Time", duration: "7:02"},
+        {number: 5, title: "The Great Gig in the Sky", duration: "4:44"},
+        {number: 6, title: "Money", duration: "6:20"},
+        {number: 7, title: "Us and Them", duration: "7:52"},
+        {number: 8, title: "Any Colour You Like", duration: "3:25"},
+        {number: 9, title: "Brain Damage", duration: "3:50"},
+        {number: 10, title: "Eclipse", duration: "2:06"}
+      ]},
+      {title: "Aja", artist: "Steely Dan", year: 1977, genre: "Rock/Jazz Fusion", description: "A sophisticated album renowned for its impeccable production and intricate compositions.", cover: "https://i.scdn.co/image/ab67616d0000b273cf39e4261576717ff4737bb6", analysis: "pendiente", spotifyUri: "spotify:album:1hOK2ey9W76x9GnftSRgrw", spotifyUrl: "https://open.spotify.com/album/1hOK2ey9W76x9GnftSRgrw", appleMusicUrl: "https://music.apple.com/ar/album/aja/1706428459", youtubeUrl: "https://www.youtube.com/watch?v=oNwlmL-bOkg", tracks: [
+        {number: 1, title: "Black Cow", duration: "5:10"},
+        {number: 2, title: "Aja", duration: "7:57"},
+        {number: 3, title: "Deacon Blues", duration: "7:35"},
+        {number: 4, title: "Peg", duration: "3:57"},
+        {number: 5, title: "Home At Last", duration: "5:35"},
+        {number: 6, title: "I Got The News", duration: "5:07"},
+        {number: 7, title: "Josie", duration: "4:33"}
+      ]},
+      {title: "Alta Suciedad", artist: "Andrés Calamaro", year: 1997, genre: "Rock Argentino", description: "Un álbum icónico del rock argentino que marca un antes y después en la carrera de Calamaro.", cover: "https://i.scdn.co/image/ab67616d0000b273e4b8ec3d2ffe1f77c7185d48", analysis: "pendiente", spotifyUri: "spotify:album:44D07i1Lk0zFtWHRARMih6", spotifyUrl: "https://open.spotify.com/album/44D07i1Lk0zFtWHRARMih6", appleMusicUrl: "https://music.apple.com/ar/album/alta-suciedad/101375497", youtubeUrl: "https://www.youtube.com/watch?v=zFvewPUgDu4", tracks: [
+        {number: 1, title: "Alta suciedad", duration: "4:27"},
+        {number: 2, title: "Todo lo demás también", duration: "2:50"},
+        {number: 3, title: "Donde manda marinero", duration: "4:04"},
+        {number: 4, title: "Loco", duration: "3:37"},
+        {number: 5, title: "Flaca", duration: "4:37"},
+        {number: 6, title: "¿Quién asó la manteca?", duration: "4:26"},
+        {number: 7, title: "Media Verónica", duration: "3:39"},
+        {number: 8, title: "El tercio de los sueños", duration: "3:54"},
+        {number: 9, title: "Comida china", duration: "2:09"},
+        {number: 10, title: "Elvis está vivo", duration: "3:00"},
+        {number: 11, title: "Me arde", duration: "3:37"},
+        {number: 12, title: "Crímenes perfectos", duration: "4:24"},
+        {number: 13, title: "Nunca es igual", duration: "7:47"},
+        {number: 14, title: "El novio del olvido", duration: "2:24"}
+      ]},
+      {title: "In Between Dreams", artist: "Jack Johnson", year: 2005, genre: "Reggae/Pop", description: "A laid-back acoustic album that captured Jack Johnson's relaxed island vibe.", cover: "https://i.scdn.co/image/ab67616d0000b273628dba01c669d89586967dc5", analysis: "pendiente", spotifyUri: "spotify:album:2B9q4KPjOEYu885Keo9dfX", spotifyUrl: "https://open.spotify.com/album/2B9q4KPjOEYu885Keo9dfX", appleMusicUrl: "https://music.apple.com/ar/album/in-between-dreams-bonus-track-version/1440857781", youtubeUrl: "https://www.youtube.com/watch?v=1R9Xm3KoKbY", tracks: [
+        {number: 1, title: "Better Together", duration: "3:27"},
+        {number: 2, title: "Never Know", duration: "3:52"},
+        {number: 3, title: "Banana Pancakes", duration: "3:11"},
+        {number: 4, title: "Good People", duration: "3:28"},
+        {number: 5, title: "No Other Way", duration: "3:09"},
+        {number: 6, title: "Sitting, Waiting, Wishing", duration: "3:03"},
+        {number: 7, title: "Staple It Together", duration: "3:16"},
+        {number: 8, title: "Situations", duration: "1:17"},
+        {number: 9, title: "Crying Shame", duration: "3:06"},
+        {number: 10, title: "If I Could", duration: "2:24"},
+        {number: 11, title: "Breakdown", duration: "3:32"},
+        {number: 12, title: "Belle", duration: "1:42"},
+        {number: 13, title: "Do You Remember", duration: "2:24"},
+        {number: 14, title: "Constellations", duration: "3:21"},
+        {number: 15, title: "Constellations - Demo Version", duration: "3:32"}
+      ]},
+      {title: "Double Fantasy", artist: "John Lennon & Yoko Ono", year: 1980, genre: "Rock/Pop", description: "John Lennon's final studio album featuring intimate duets with Yoko Ono.", cover: "https://i.scdn.co/image/ab67616d00001e020488a5c4e21edc24526652ae", analysis: "pendiente", spotifyUri: "spotify:album:1NWA2fPLUAW5df7UGI5thp", spotifyUrl: "https://open.spotify.com/album/1NWA2fPLUAW5df7UGI5thp", appleMusicUrl: "https://music.apple.com/ar/album/double-fantasy-stripped-down/1440987952", youtubeUrl: "https://www.youtube.com/watch?v=rVXkvgVAj4U", tracks: [
+        {number: 1, title: "(Just Like) Starting Over - Remastered 2010", duration: "3:56"},
+        {number: 2, title: "Kiss Kiss Kiss - Remastered 2010", duration: "2:41"},
+        {number: 3, title: "Cleanup Time - Remastered 2010", duration: "2:58"},
+        {number: 4, title: "Give Me Something - Remastered 2010", duration: "1:34"},
+        {number: 5, title: "I'm Losing You - Remastered 2010", duration: "3:57"},
+        {number: 6, title: "I'm Moving On - Remastered 2010", duration: "2:21"},
+        {number: 7, title: "Beautiful Boy (Darling Boy) - Remastered 2010", duration: "4:05"},
+        {number: 8, title: "Watching The Wheels - Remastered 2010", duration: "3:59"},
+        {number: 9, title: "Yes, I'm Your Angel - Remastered 2010", duration: "3:09"},
+        {number: 10, title: "Woman - Remastered 2010", duration: "3:32"},
+        {number: 11, title: "Beautiful Boys - Remastered 2010", duration: "2:55"},
+        {number: 12, title: "Dear Yoko - Remastered 2010", duration: "2:34"},
+        {number: 13, title: "Every Man Has A Woman Who Loves Him - Remastered 2010", duration: "4:03"},
+        {number: 14, title: "Hard Times Are Over - Remastered 2010", duration: "3:19"}
+      ]},
+      {title: "El Kuelgue", artist: "El Kuelgue", year: 2023, genre: "Rock Argentino", description: "Un álbum que representa la esencia contemporánea del rock argentino.", cover: "https://i.scdn.co/image/ab67616d00001e02a433e20d8be73d04536c7e6c", analysis: "pendiente", spotifyUri: "spotify:album:1BWkKKRj57bflcjU4ScpGa", spotifyUrl: "https://open.spotify.com/album/1BWkKKRj57bflcjU4ScpGa", appleMusicUrl: "https://music.apple.com/ar/album/hola-precioso/1737900372", youtubeUrl: "https://www.youtube.com/playlist?list=PLSpBGpNWr93BvNp224ZZkQ28BHZtQ1iu9", tracks: [
+        {number: 1, title: "Peluquita", duration: "4:00"},
+        {number: 2, title: "Sinoca", duration: "3:35"},
+        {number: 3, title: "Diganselo", duration: "3:59"},
+        {number: 4, title: "Hola Precioso", duration: "3:42"},
+        {number: 5, title: "Ir Derecho", duration: "3:26"},
+        {number: 6, title: "La Curva", duration: "2:46"},
+        {number: 7, title: "Leguei Recién", duration: "3:39"},
+        {number: 8, title: "Por Los Años", duration: "3:28"},
+        {number: 9, title: "Miró", duration: "2:06"}
+      ]},
+      {title: "Brothers in Arms", artist: "Dire Straits", year: 1985, genre: "Rock", description: "A masterpiece of production featuring the iconic 'Money for Nothing' and timeless classics.", cover: "https://i.scdn.co/image/ab67616d0000b27358c4e9c84ece7d31f51636f3", analysis: "pendiente", spotifyUri: "spotify:album:6Pz06FAaeym0JSqVqIkN56", spotifyUrl: "https://open.spotify.com/album/6Pz06FAaeym0JSqVqIkN56", appleMusicUrl: "https://music.apple.com/ar/album/brothers-in-arms-remastered-1996/1565391787", youtubeUrl: "https://www.youtube.com/watch?v=p0D-w-HhB64", tracks: [
+        {number: 1, title: "So Far Away - Remastered 1996", duration: "5:06"},
+        {number: 2, title: "Money For Nothing - Remastered 1996", duration: "8:25"},
+        {number: 3, title: "Walk Of Life - Remastered 1996", duration: "4:08"},
+        {number: 4, title: "Your Latest Trick - Remastered 1996", duration: "6:29"},
+        {number: 5, title: "Why Worry - Remastered 1996", duration: "8:24"},
+        {number: 6, title: "Ride Across The River - Remastered 1996", duration: "6:58"},
+        {number: 7, title: "The Man's Too Strong - Remastered 1996", duration: "4:38"},
+        {number: 8, title: "One World - Remastered 1996", duration: "3:37"},
+        {number: 9, title: "Brothers In Arms - Remastered 1996", duration: "7:00"}
+      ]},
+      {title: "27", artist: "Ciro y Los Persas", year: 2012, genre: "Rock Argentino", description: "Un álbum que representa la esencia del rock argentino contemporáneo.", cover: "https://i.scdn.co/image/ab67616d00001e02328e850621f3d7b28d5cd910", analysis: "pendiente", spotifyUri: "spotify:album:53SyvU4UwkCQc2jqZJc0Bo", spotifyUrl: "https://open.spotify.com/album/53SyvU4UwkCQc2jqZJc0Bo", appleMusicUrl: "https://music.apple.com/ar/album/27/1811665309", youtubeUrl: "https://www.youtube.com/watch?v=BYlyVGbX5FU", tracks: [
+        {number: 1, title: "Astros", duration: "4:12"},
+        {number: 2, title: "Caminando", duration: "4:40"},
+        {number: 3, title: "Me Gusta", duration: "4:49"},
+        {number: 4, title: "Murgueros", duration: "5:00"},
+        {number: 5, title: "Mirania", duration: "4:16"},
+        {number: 6, title: "Barón Rojo", duration: "4:45"},
+        {number: 7, title: "Ciudad Animal", duration: "5:14"},
+        {number: 8, title: "Currito", duration: "4:20"},
+        {number: 9, title: "Héroes de Malvinas", duration: "4:26"},
+        {number: 10, title: "La Flor en la Piedra", duration: "4:04"},
+        {number: 11, title: "Fácil", duration: "4:11"},
+        {number: 12, title: "Mi Sol", duration: "4:00"},
+        {number: 13, title: "Tal Vez", duration: "5:18"},
+        {number: 14, title: "Larga Vida al Rock", duration: "4:11"},
+        {number: 15, title: "Tango del Diablo", duration: "4:07"}
+      ]},
+      {title: "Back to Black", artist: "Amy Winehouse", year: 2006, genre: "Jazz/Soul", description: "Amy Winehouse's debut studio album, a masterpiece of modern soul and jazz that won multiple Grammy Awards.", cover: "https://i.scdn.co/image/ab67616d00001e02dc65d5638a3de4a0bdf3c05f", analysis: "pendiente", spotifyUri: "spotify:album:097eYvf9NKjFnv4xA9s2oV", spotifyUrl: "https://open.spotify.com/album/097eYvf9NKjFnv4xA9s2oV", appleMusicUrl: "https://music.apple.com/us/album/back-to-black/1422677780", youtubeUrl: "https://www.youtube.com/watch?v=N2iN1nXH3MM", tracks: [
+        {number: 1, title: "Rehab", duration: "3:33"},
+        {number: 2, title: "You Know I'm No Good", duration: "4:16"},
+        {number: 3, title: "Me & Mr Jones", duration: "2:31"},
+        {number: 4, title: "Just Friends", duration: "3:11"},
+        {number: 5, title: "Back to Black", duration: "4:00"},
+        {number: 6, title: "Love Is A Losing Game", duration: "2:34"},
+        {number: 7, title: "Tears Dry On Their Own", duration: "3:05"},
+        {number: 8, title: "Wake Up Alone", duration: "3:41"},
+        {number: 9, title: "Some Unholy War", duration: "2:21"},
+        {number: 10, title: "He Can Only Hold Her", duration: "2:44"},
+        {number: 11, title: "Addicted", duration: "2:46"}
+      ]},
+      {title: "Out of the Blue", artist: "Electric Light Orchestra", year: 1977, genre: "Rock / Symphonic Rock", description: "El séptimo álbum de ELO, una obra maestra del rock sinfónico que incluye 'Mr. Blue Sky'. Doble LP que representa la cima creativa de la banda, fusionando arreglos orquestales con rock y pop de influencia beatle.", cover: "https://i.scdn.co/image/ab67616d00001e02c18c4e6c2978fb6cbdef85e2", analysis: "pendiente", spotifyUri: "spotify:album:3usnShwygMXVZB4IV5dwnU", spotifyUrl: "https://open.spotify.com/album/3usnShwygMXVZB4IV5dwnU", appleMusicUrl: "https://music.apple.com/us/album/out-of-the-blue/1054525002", youtubeUrl: "https://www.youtube.com/watch?v=2f9CoaIH9FE", tracks: [
+        {number: 1, title: "Turn to Stone", duration: "3:49"},
+        {number: 2, title: "It's Over", duration: "4:08"},
+        {number: 3, title: "Sweet Talkin' Woman", duration: "3:49"},
+        {number: 4, title: "Across the Border", duration: "3:53"},
+        {number: 5, title: "Night in the City", duration: "4:02"},
+        {number: 6, title: "Starlight", duration: "4:31"},
+        {number: 7, title: "Jungle", duration: "3:53"},
+        {number: 8, title: "Believe Me Now", duration: "1:21"},
+        {number: 9, title: "Steppin' Out", duration: "4:40"},
+        {number: 10, title: "Standin' in the Rain", duration: "4:21"},
+        {number: 11, title: "Big Wheels", duration: "5:08"},
+        {number: 12, title: "Summer and Lightning", duration: "4:14"},
+        {number: 13, title: "Mr. Blue Sky", duration: "5:03"},
+        {number: 14, title: "Sweet Is the Night", duration: "3:27"},
+        {number: 15, title: "The Whale", duration: "5:06"},
+        {number: 16, title: "Birmingham Blues", duration: "4:23"},
+        {number: 17, title: "Wild West Hero", duration: "4:41"}
+      ]},
+      {title: "Hotel California", artist: "Eagles", year: 1976, genre: "Rock", description: "One of the most iconic albums of the 70s featuring the legendary title track.", cover: "https://i.scdn.co/image/ab67616d00001e024637341b9f507521afa9a778", analysis: "pendiente", spotifyUri: "spotify:album:2widuo17g5CEC66IbzveRu", spotifyUrl: "https://open.spotify.com/album/2widuo17g5CEC66IbzveRu", appleMusicUrl: "https://music.apple.com/ar/album/hotel-california/635770200", youtubeUrl: "https://www.youtube.com/watch?v=nhjVDGF-xys", tracks: [
+        {number: 1, title: "Hotel California - 2013 Remaster", duration: "6:31"},
+        {number: 2, title: "New Kid in Town - 2013 Remaster", duration: "5:04"},
+        {number: 3, title: "Life in the Fast Lane - 2013 Remaster", duration: "4:46"},
+        {number: 4, title: "Wasted Time - 2013 Remaster", duration: "4:56"},
+        {number: 5, title: "Wasted Time (Reprise) - 2013 Remaster", duration: "1:23"},
+        {number: 6, title: "Victim of Love - 2013 Remaster", duration: "4:10"},
+        {number: 7, title: "Pretty Maids All in a Row - 2013 Remaster", duration: "3:59"},
+        {number: 8, title: "Try and Love Again - 2013 Remaster", duration: "5:11"},
+        {number: 9, title: "The Last Resort - 2013 Remaster", duration: "7:24"}
+      ]},
+      {title: "The Velvet Underground & Nico", artist: "The Velvet Underground & Nico", year: 1967, genre: "Rock/Experimental", description: "A revolutionary debut album that defined the avant-garde sound of the 1960s.", cover: "https://i.scdn.co/image/ab67616d0000b27398260c528e6eec9dd431c1d7", analysis: "pendiente", spotifyUri: "spotify:album:4xwx0x7k6c5VuThz5qVqmV", spotifyUrl: "https://open.spotify.com/album/4xwx0x7k6c5VuThz5qVqmV", appleMusicUrl: "https://music.apple.com/ar/album/the-velvet-underground-nico-45th-anniversary-edition/1440851613", youtubeUrl: "https://www.youtube.com/watch?v=qwWC1i7FuTA", tracks: [
+        {number: 1, title: "Sunday Morning", duration: "2:55"},
+        {number: 2, title: "I'm Waiting For The Man", duration: "4:39"},
+        {number: 3, title: "Femme Fatale", duration: "2:39"},
+        {number: 4, title: "Venus In Furs", duration: "5:12"},
+        {number: 5, title: "Run Run Run", duration: "4:22"},
+        {number: 6, title: "All Tomorrow's Parties", duration: "6:59"},
+        {number: 7, title: "Heroin", duration: "7:13"},
+        {number: 8, title: "There She Goes Again", duration: "2:41"},
+        {number: 9, title: "I'll Be Your Mirror", duration: "2:14"},
+        {number: 10, title: "The Black Angel's Death Song", duration: "3:12"},
+        {number: 11, title: "European Son", duration: "7:47"}
+      ]},
+      {title: "ファンキー・スタッフ", artist: "Jiro Inagaki and His Soul Media", year: 1975, genre: "Jazz Funk / Jazz Fusion", description: "Obra maestra del jazz-funk japonés liderada por el saxofonista Jiro Inagaki, con arreglos de Hiromasa Suzuki. Un clásico del sonido japonés de los 70 reconocido mundialmente.", cover: "https://i.scdn.co/image/ab67616d00001e0287af363f9702e794f50682de", analysis: "pendiente", spotifyUri: "spotify:album:6XJZInF8Eg8hLBGNKTeHEI", spotifyUrl: "https://open.spotify.com/album/6XJZInF8Eg8hLBGNKTeHEI", appleMusicUrl: "https://music.apple.com/us/album/funky-stuff/1508946500", youtubeUrl: "https://www.youtube.com/watch?v=qMK8rdwtY70", tracks: [
+        {number: 1, title: "ペインテッド・パラダイス", duration: "6:52"},
+        {number: 2, title: "ファンキー・モーション", duration: "5:40"},
+        {number: 3, title: "ブリーズ", duration: "4:37"},
+        {number: 4, title: "スクラッチ", duration: "5:25"},
+        {number: 5, title: "ファンキー・スタッフ", duration: "4:33"},
+        {number: 6, title: "ワン・フォー・ジロー", duration: "4:51"},
+        {number: 7, title: "ジェントル・ウェイヴ", duration: "5:21"},
+        {number: 8, title: "フォー・アップ", duration: "6:38"}
+      ]},
+      {title: "Clandestino", artist: "Manu Chao", year: 1998, genre: "World / Reggae / Latin", description: "Debut solista de Manu Chao, un viaje musical por América Latina que mezcla reggae, rock, cumbia y flamenco. Pasó cuatro años en los charts franceses y ganó el premio al mejor álbum de música del mundo en las Victoires de la Musique.", cover: "https://i.scdn.co/image/ab67616d00001e026af3bb130abce20635021658", analysis: "pendiente", spotifyUri: "spotify:album:3wkvpbuSilxLfiHLtpnfvo", spotifyUrl: "https://open.spotify.com/album/3wkvpbuSilxLfiHLtpnfvo", appleMusicUrl: "https://music.apple.com/us/album/clandestino/725493481", youtubeUrl: "https://www.youtube.com/watch?v=bnaTLcFpQnE", tracks: [
+        {number: 1, title: "Clandestino", duration: "2:29"},
+        {number: 2, title: "Desaparecido", duration: "3:47"},
+        {number: 3, title: "Bongo Bong", duration: "2:38"},
+        {number: 4, title: "Je ne t'aime plus", duration: "2:02"},
+        {number: 5, title: "Mentira", duration: "4:37"},
+        {number: 6, title: "Lágrimas de oro", duration: "2:57"},
+        {number: 7, title: "Mama Call", duration: "2:21"},
+        {number: 8, title: "Luna y sol", duration: "3:07"},
+        {number: 9, title: "Por el suelo", duration: "2:21"},
+        {number: 10, title: "Welcome to Tijuana", duration: "4:04"},
+        {number: 11, title: "Día luna...Día pena", duration: "1:30"},
+        {number: 12, title: "Malegría", duration: "2:55"},
+        {number: 13, title: "La vie à 2", duration: "3:00"},
+        {number: 14, title: "Minha galera", duration: "2:21"},
+        {number: 15, title: "La despedida", duration: "3:09"},
+        {number: 16, title: "El viento", duration: "2:28"}
+      ]},
+      {title: "All Things Must Pass", artist: "George Harrison", year: 1970, genre: "Rock", description: "George Harrison's masterpiece double album with rare and alternate versions.", cover: "https://i.scdn.co/image/ab67616d00001e026c6610322fc60bfb41481273", analysis: "pendiente", spotifyUri: "spotify:album:7j7lsExGJtBHLgDYzjclwk", spotifyUrl: "https://open.spotify.com/album/7j7lsExGJtBHLgDYzjclwk", appleMusicUrl: "https://music.apple.com/ar/album/all-things-must-pass-50th-anniversary/1666662415", youtubeUrl: "https://www.youtube.com/watch?v=bMSM8ZZtpXU", tracks: [
+        {section: "DISC 1"},
+        {number: 1, title: "I'd Have You Anytime - 2014 Remaster", duration: "2:57"},
+        {number: 2, title: "My Sweet Lord - 2014 Remaster", duration: "4:41"},
+        {number: 3, title: "Wah-Wah - 2014 Remaster", duration: "5:37"},
+        {number: 4, title: "Isn't It a Pity - 2014 Remaster", duration: "7:10"},
+        {number: 5, title: "What Is Life - 2014 Remaster", duration: "4:24"},
+        {number: 6, title: "If Not for You - 2014 Remaster", duration: "3:30"},
+        {number: 7, title: "Behind That Locked Door - 2014 Remaster", duration: "3:06"},
+        {number: 8, title: "Let It Down - 2014 Remaster", duration: "4:58"},
+        {number: 9, title: "Run of the Mill - 2014 Remaster", duration: "2:51"},
+        {number: 10, title: "I Live for You - 2014 Remaster", duration: "3:37"},
+        {number: 11, title: "Beware of Darkness - 1st Version - 2014 Remaster", duration: "3:22"},
+        {number: 12, title: "Let It Down - Original Guitar and Vocal - 2014 Remaster", duration: "3:55"},
+        {number: 13, title: "What Is Life - Backing Track - 2014 Remaster", duration: "4:27"},
+        {number: 14, title: "My Sweet Lord (2000) - 2014 Remaster", duration: "4:55"},
+        {section: "DISC 2"},
+        {number: 1, title: "Beware of Darkness - 2014 Remaster", duration: "3:51"},
+        {number: 2, title: "Apple Scruffs - 2014 Remaster", duration: "3:06"},
+        {number: 3, title: "Ballad of Sir Frankie Crisp (Let It Roll) - 2014 Remaster", duration: "3:48"},
+        {number: 4, title: "Awaiting on You All - 2014 Remaster", duration: "2:48"},
+        {number: 5, title: "All Things Must Pass - 2014 Remaster", duration: "3:46"},
+        {number: 6, title: "I Dig Love - 2014 Remaster", duration: "4:57"},
+        {number: 7, title: "Art of Dying - 2014 Remaster", duration: "3:18"},
+        {number: 8, title: "Isn't It a Pity - Version Two - 2014 Remaster", duration: "4:48"},
+        {number: 9, title: "Hear Me Lord - 2014 Remaster", duration: "5:49"},
+        {number: 10, title: "It's Johnny's Birthday - 2014 Remaster", duration: "0:49"},
+        {number: 11, title: "Plug Me In - 2014 Remaster", duration: "3:19"},
+        {number: 12, title: "I Remember Jeep - 2014 Remaster", duration: "8:08"},
+        {number: 13, title: "Thanks for the Pepperoni - 2014 Remaster", duration: "5:32"},
+        {number: 14, title: "Out of the Blue - 2014 Remaster", duration: "11:13"}
+      ]},
+      {title: "Sumo", artist: "Sumo", year: 1987, genre: "Rock Argentino", description: "Un álbum fundamental del rock argentino que consolida a Sumo como una banda revolucionaria.", cover: "https://i.scdn.co/image/ab67616d0000b2733b5ad8b3f780523376b2f9b4", analysis: "pendiente", spotifyUri: "spotify:album:721cIV4PIWZSK5nZaYPvFy", spotifyUrl: "https://open.spotify.com/album/721cIV4PIWZSK5nZaYPvFy", appleMusicUrl: "https://music.apple.com/ar/album/after-chabon/321567831", youtubeUrl: "https://www.youtube.com/watch?v=kRPjIK6YBOI", tracks: [
+        {number: 1, title: "Crua Chan", duration: "3:30"},
+        {number: 2, title: "No Tan Distintos", duration: "2:40"},
+        {number: 3, title: "Banderitas y Globos", duration: "2:58"},
+        {number: 4, title: "Mañana en el Abasto", duration: "4:08"},
+        {number: 5, title: "Hola Frank", duration: "3:09"},
+        {number: 6, title: "Ojos De Terciopelo", duration: "3:31"},
+        {number: 7, title: "Lo Quiero Ya", duration: "2:16"},
+        {number: 8, title: "La Gota en el Ojo", duration: "3:05"},
+        {number: 9, title: "El Ciguito Volador", duration: "3:19"},
+        {number: 10, title: "No Te Pongas Azul", duration: "4:04"},
+        {number: 11, title: "Noche de Paz", duration: "2:07"},
+        {number: 12, title: "Percussion Baby", duration: "3:46"}
+      ]},
+      {title: "Dire Straits", artist: "Dire Straits", year: 1978, genre: "Rock", description: "The legendary debut album that introduced Mark Knopfler's distinctive guitar style to the world.", cover: "https://i.scdn.co/image/ab67616d00001e02b49d49cc95564aede7998bb8", analysis: "pendiente", spotifyUri: "spotify:album:2rCS6Xwx32V27pvgFzLzlT", spotifyUrl: "https://open.spotify.com/album/2rCS6Xwx32V27pvgFzLzlT", appleMusicUrl: "https://music.apple.com/ar/album/dire-straits-remastered/1440801714", youtubeUrl: "https://www.youtube.com/watch?v=4Y8kJGK2C0Y", tracks: [
+        {number: 1, title: "Down To The Waterline", duration: "4:01"},
+        {number: 2, title: "Water Of Love", duration: "5:25"},
+        {number: 3, title: "Setting Me Up", duration: "3:18"},
+        {number: 4, title: "Six Blade Knife", duration: "4:12"},
+        {number: 5, title: "Southbound Again", duration: "2:59"},
+        {number: 6, title: "Sultans Of Swing", duration: "5:48"},
+        {number: 7, title: "In The Gallery", duration: "6:15"},
+        {number: 8, title: "Wild West End", duration: "4:41"},
+        {number: 9, title: "Lions", duration: "5:03"}
+      ]},
+      {title: "Artaud", artist: "Pescado Rabioso", year: 1973, genre: "Rock Argentino", description: "Un álbum fundamental del rock argentino con la intensidad característica de Pescado Rabioso.", cover: "https://i.scdn.co/image/ab67616d00001e0250db5a166ea23d5d6c4cd387", analysis: "pendiente", spotifyUri: "spotify:album:5MJR9j21vjEi4ODxzhvoTA", spotifyUrl: "https://open.spotify.com/album/5MJR9j21vjEi4ODxzhvoTA", appleMusicUrl: "https://music.apple.com/us/album/artaud/321645242", youtubeUrl: "https://www.youtube.com/watch?v=LXYZQTt-Kuo", tracks: [
+        {number: 1, title: "Todas las Hojas Son del Viento", duration: "2:10"},
+        {number: 2, title: "Cementerio Club", duration: "4:55"},
+        {number: 3, title: "Por", duration: "1:39"},
+        {number: 4, title: "Superchería", duration: "4:15"},
+        {number: 5, title: "La Sed Verdadera", duration: "3:29"},
+        {number: 6, title: "Cantata de Puentes Amarillos", duration: "9:07"},
+        {number: 7, title: "Bajan", duration: "3:24"},
+        {number: 8, title: "A Starosta, el Idiota", duration: "3:13"},
+        {number: 9, title: "Las Habladurias del Mundo", duration: "4:03"}
+      ]},
+      {title: "Duke Ellington & John Coltrane", artist: "Duke Ellington & John Coltrane", year: 1962, genre: "Jazz", description: "A historic collaboration between two jazz legends.", cover: "https://i.scdn.co/image/ab67616d00001e0292257f295ed3366048ad7c53", analysis: "pendiente", spotifyUri: "spotify:album:7qsnx3thQiQabvDkHfqI1m", spotifyUrl: "https://open.spotify.com/album/7qsnx3thQiQabvDkHfqI1m", appleMusicUrl: "https://music.apple.com/us/album/duke-ellington-john-coltrane/1440810221", youtubeUrl: "https://www.youtube.com/watch?v=b_Y0zepa-PQ", tracks: [
+        {number: 1, title: "In a Sentimental Mood", duration: "4:28"},
+        {number: 2, title: "Take The Coltrane", duration: "4:45"},
+        {number: 3, title: "Big Nick", duration: "4:28"},
+        {number: 4, title: "Stevie", duration: "4:25"},
+        {number: 5, title: "My Little Brown Book", duration: "5:24"},
+        {number: 6, title: "Angelica", duration: "6:03"},
+        {number: 7, title: "The Feeling Of Jazz", duration: "5:35"}
+      ]},
+      {title: "Let's Dance", artist: "David Bowie", year: 1983, genre: "Rock/Pop", description: "A dance-influenced masterpiece that redefined Bowie's sound for the 80s.", cover: "https://i.scdn.co/image/ab67616d00001e02db0917ddd4139153bc1d1a1a", analysis: "pendiente", spotifyUri: "spotify:album:4NwG11AsDJluT732lSjMrV", spotifyUrl: "https://open.spotify.com/album/4NwG11AsDJluT732lSjMrV", appleMusicUrl: "https://music.apple.com/us/album/lets-dance-2018-remaster/1475002920", youtubeUrl: "https://www.youtube.com/watch?v=eamW7ZyvZj0", tracks: [
+        {number: 1, title: "Modern Love", duration: "4:48"},
+        {number: 2, title: "China Girl", duration: "5:33"},
+        {number: 3, title: "Let's Dance", duration: "7:37"},
+        {number: 4, title: "Without You", duration: "3:09"},
+        {number: 5, title: "Ricochet", duration: "5:13"},
+        {number: 6, title: "Criminal World", duration: "4:25"},
+        {number: 7, title: "Cat People (Putting Out Fire)", duration: "5:09"},
+        {number: 8, title: "Shake It", duration: "3:52"}
+      ]},
+      {title: "Cosmo's Factory", artist: "Creedence Clearwater Revival", year: 1970, genre: "Rock", description: "A swamp rock classic featuring some of CCR's greatest hits.", cover: "https://i.scdn.co/image/ab67616d00001e026e186edfb8fe3710fdc1f7c2", analysis: "pendiente", spotifyUri: "spotify:album:5w2X5ZmdE4u0XGkOU7BiLG", spotifyUrl: "https://open.spotify.com/album/5w2X5ZmdE4u0XGkOU7BiLG", appleMusicUrl: "https://music.apple.com/us/album/cosmos-factory/1440948745", youtubeUrl: "https://www.youtube.com/watch?v=Gy--CbN9__k", tracks: [
+        {number: 1, title: "Ramble Tamble", duration: "7:11"},
+        {number: 2, title: "Before You Accuse Me (Take A Look At Your...)", duration: "3:27"},
+        {number: 3, title: "Travelin' Band", duration: "2:08"},
+        {number: 4, title: "Ooby Dooby", duration: "2:07"},
+        {number: 5, title: "Lookin' Out My Back Door", duration: "2:32"},
+        {number: 6, title: "Run Through The Jungle", duration: "3:05"},
+        {number: 7, title: "Up Around The Bend", duration: "2:39"},
+        {number: 8, title: "My Baby Left Me", duration: "2:19"},
+        {number: 9, title: "Who'll Stop The Rain", duration: "2:27"},
+        {number: 10, title: "I Heard It Through the Grapevine", duration: "11:07"},
+        {number: 11, title: "Long As I Can See the Light", duration: "3:33"}
+      ]},
+      {title: "Communiqué", artist: "Dire Straits", year: 1979, genre: "Rock", description: "The follow-up to their debut, featuring refined guitar work and storytelling.", cover: "https://i.scdn.co/image/ab67616d00001e027d93116a6bcbd2ec3c79b062", analysis: "pendiente", spotifyUri: "spotify:album:6HEOoO8aHq5M88OA4teVY1", spotifyUrl: "https://open.spotify.com/album/6HEOoO8aHq5M88OA4teVY1", appleMusicUrl: "https://music.apple.com/us/album/communique/299801463", youtubeUrl: "https://www.youtube.com/watch?v=8qf-JslFS4Q", tracks: [
+        {number: 1, title: "Once Upon a Time in the West", duration: "5:25"},
+        {number: 2, title: "News", duration: "4:14"},
+        {number: 3, title: "Where Do You Think You're Going?", duration: "3:49"},
+        {number: 4, title: "Communiqué", duration: "5:49"},
+        {number: 5, title: "Lady Writer", duration: "3:49"},
+        {number: 6, title: "Angel of Mercy", duration: "4:36"},
+        {number: 7, title: "Portobello Belle", duration: "4:29"},
+        {number: 8, title: "Single-Handed Sailor", duration: "4:42"},
+        {number: 9, title: "Follow Me Home", duration: "5:50"}
+      ]},
+      {title: "Casiopea", artist: "Casiopea", year: 1979, genre: "Jazz Fusion", description: "A debut album of intricate fusion and progressive rock from the Japanese masters.", cover: "https://i.scdn.co/image/ab67616d00001e02648478cb25e3e302454e40e1", analysis: "pendiente", spotifyUri: "spotify:album:3uFgYgCEvCSACjB8XHl3hb", spotifyUrl: "https://open.spotify.com/album/3uFgYgCEvCSACjB8XHl3hb", appleMusicUrl: "https://music.apple.com/us/album/casiopea/1535034715", youtubeUrl: "https://www.youtube.com/watch?v=kq4PpQ3FvV4", tracks: [
+        {number: 1, title: "タイム・リミット", duration: "3:07"},
+        {number: 2, title: "ディアーズ・オブ・ザ・スター", duration: "4:32"},
+        {number: 3, title: "スペース・ロード", duration: "5:14"},
+        {number: 4, title: "ミッドナイト・ランデブー", duration: "5:23"},
+        {number: 5, title: "ファー・アウェイ", duration: "3:56"},
+        {number: 6, title: "スワロー", duration: "4:26"},
+        {number: 7, title: "ドリーム・ヒル", duration: "5:39"},
+        {number: 8, title: "ブラック・ジョーク", duration: "4:16"}
+      ]},
+      {title: "Nada Personal", artist: "Soda Stereo", year: 1985, genre: "Rock Argentino", description: "A landmark album in Argentine rock, featuring the band's signature synth-rock sound.", cover: "https://i.scdn.co/image/ab67616d00001e0225d379c949ebfcfc1e4e402f", analysis: "pendiente", spotifyUri: "spotify:album:6PdGLbr3AAlR7KsrT0YQOC", spotifyUrl: "https://open.spotify.com/album/6PdGLbr3AAlR7KsrT0YQOC", appleMusicUrl: "https://music.apple.com/us/album/nada-personal/321883378", youtubeUrl: "https://www.youtube.com/watch?v=kpnoe1j3a7A", tracks: [
+        {number: 1, title: "Nada Personal", duration: "4:32"},
+        {number: 2, title: "Somos Pájaros", duration: "3:45"},
+        {number: 3, title: "Profugos", duration: "4:15"},
+        {number: 4, title: "Sistema Preferente", duration: "3:58"}
+      ]},
+      {title: "Eye in the Sky", artist: "The Alan Parsons Project", year: 1982, genre: "Rock/Progressive", description: "A concept album exploring paranoia and surveillance with lush production.", cover: "https://i.scdn.co/image/ab67616d00001e028c5a6302666a7f69a8ded468", analysis: "pendiente", spotifyUri: "spotify:album:71Y6kburF8k1qyHycovHy8", spotifyUrl: "https://open.spotify.com/album/71Y6kburF8k1qyHycovHy8", appleMusicUrl: "https://music.apple.com/us/album/eye-in-the-sky/1205670750", youtubeUrl: "https://www.youtube.com/watch?v=j6Tz3LlrgTA", tracks: [
+        {number: 1, title: "Eye in the Sky", duration: "4:35"},
+        {number: 2, title: "Games People Play", duration: "5:13"},
+        {number: 3, title: "Some Are Born", duration: "4:45"}
+      ]},
+      {title: "Caress Your Soul", artist: "Sticky Fingers", year: 2013, genre: "Reggae Rock / Alternative", description: "Álbum debut de la banda australiana Sticky Fingers, un clásico instantáneo del rock reggae con influencias del soul y el dub. Incluye himnos como 'How To Fly', 'Australia Street' y 'Bootleg Rascal'.", cover: "https://i.scdn.co/image/ab67616d00001e029e015d7c3257551a325fe03a", analysis: "pendiente", spotifyUri: "spotify:album:2XiBbHgNjlt3JLz8j2S61k", spotifyUrl: "https://open.spotify.com/album/2XiBbHgNjlt3JLz8j2S61k", appleMusicUrl: "https://music.apple.com/us/album/caress-your-soul/1549350815", youtubeUrl: "https://www.youtube.com/watch?v=nZQWy3Kd40Q", tracks: [
+        {number: 1, title: "How To Fly", duration: "3:22"},
+        {number: 2, title: "Clouds & Cream", duration: "2:54"},
+        {number: 3, title: "Australia Street", duration: "3:39"},
+        {number: 4, title: "These Girls", duration: "3:25"},
+        {number: 5, title: "Sex", duration: "2:38"},
+        {number: 6, title: "Bootleg Rascal", duration: "3:47"},
+        {number: 7, title: "Caress Your Soul", duration: "2:57"},
+        {number: 8, title: "Laika", duration: "3:53"},
+        {number: 9, title: "Freddy Crabs", duration: "5:07"},
+        {number: 10, title: "Kiss The breeze", duration: "4:18"},
+        {number: 11, title: "Let It All Out", duration: "3:15"}
+      ]},
+      {title: "The Wall", artist: "Pink Floyd", year: 1979, genre: "Rock/Progressive", description: "Pink Floyd's epic double album and rock opera masterpiece.", cover: "https://i.scdn.co/image/ab67616d00001e02b694e89ba937dd2631ff584c", analysis: "pendiente", spotifyUri: "spotify:album:5Dbax7G8SWrP9xyzkOvy2F", spotifyUrl: "https://open.spotify.com/album/5Dbax7G8SWrP9xyzkOvy2F", appleMusicUrl: "https://music.apple.com/us/album/the-wall/1065975633", youtubeUrl: "https://www.youtube.com/watch?v=bE4uy4wDEJA", tracks: [
+        {section: "PART 1"},
+        {number: 1, title: "In the Flesh?", duration: "5:18"},
+        {number: 2, title: "The Thin Ice", duration: "2:26"},
+        {number: 3, title: "Another Brick in the Wall, Pt. 1", duration: "3:11"},
+        {number: 4, title: "The Happiest Days of Our Lives", duration: "1:51"},
+        {number: 5, title: "Another Brick in the Wall, Pt. 2", duration: "3:58"},
+        {number: 6, title: "Mother", duration: "5:14"},
+        {number: 7, title: "Goodbye Blue Sky", duration: "2:47"},
+        {number: 8, title: "Empty Spaces", duration: "2:07"},
+        {number: 9, title: "Young Lust", duration: "3:29"},
+        {number: 10, title: "One of My Turns", duration: "3:36"},
+        {number: 11, title: "Don't Leave Me Now", duration: "4:15"},
+        {number: 12, title: "Another Brick in the Wall, Pt. 3", duration: "1:14"},
+        {number: 13, title: "Goodbye Cruel World", duration: "1:14"},
+        {section: "PART 2"},
+        {number: 14, title: "Hey You", duration: "4:39"},
+        {number: 15, title: "Is There Anybody Out There?", duration: "2:41"},
+        {number: 16, title: "Nobody Home", duration: "3:22"},
+        {number: 17, title: "Vera", duration: "1:33"},
+        {number: 18, title: "Bring the Boys Back Home", duration: "1:27"},
+        {number: 19, title: "Comfortably Numb", duration: "6:22"},
+        {number: 20, title: "The Show Must Go On", duration: "1:36"},
+        {number: 21, title: "In the Flesh", duration: "4:15"},
+        {number: 22, title: "Run Like Hell", duration: "4:23"},
+        {number: 23, title: "Waiting for the Worms", duration: "3:57"},
+        {number: 24, title: "Stop", duration: "0:30"},
+        {number: 25, title: "The Trial", duration: "5:18"},
+        {number: 26, title: "Outside the Wall", duration: "1:43"}
+      ]},
+      {title: "Exodus", artist: "Bob Marley & The Wailers", year: 1977, genre: "Reggae", description: "A reggae masterpiece featuring some of Bob Marley's most iconic songs.", cover: "https://i.scdn.co/image/ab67616d00001e02811bfdc4f55b3a7484524aaf", analysis: "pendiente", spotifyUri: "spotify:album:2mBbV0Ad6B4ydHMZlzAY7S", spotifyUrl: "https://open.spotify.com/album/2mBbV0Ad6B4ydHMZlzAY7S", appleMusicUrl: "https://music.apple.com/us/album/exodus-2013-remaster/1625213430", youtubeUrl: "https://www.youtube.com/watch?v=_DHEMfqlDWg", tracks: [
+        {number: 1, title: "Natural Mystic", duration: "3:27"},
+        {number: 2, title: "So Much Things To Say", duration: "3:08"},
+        {number: 3, title: "Guiltiness", duration: "3:19"},
+        {number: 4, title: "The Heathen", duration: "2:32"},
+        {number: 5, title: "Exodus", duration: "7:40"},
+        {number: 6, title: "Jamming", duration: "3:31"},
+        {number: 7, title: "Waiting In Vain", duration: "4:16"},
+        {number: 8, title: "Turn Your Lights Down Low", duration: "3:39"},
+        {number: 9, title: "Three Little Birds", duration: "3:00"},
+        {number: 10, title: "One Love / People Get Ready", duration: "2:52"},
+        {number: 11, title: "Jamming - 12\" Version", duration: "5:52"},
+        {number: 12, title: "Punky Reggae Party - 12\" Version", duration: "6:52"}
+      ]},
+      {title: "La Fusa (Live)", artist: "Vinícius de Moraes", year: 1975, genre: "Bossa Nova/Jazz", description: "An intimate live performance capturing the essence of Brazilian music.", cover: "https://i.scdn.co/image/ab67616d00001e02315049eccb2f9d0f09002e18", analysis: "pendiente", spotifyUri: "spotify:album:3IGAkpd5fSALj6Z7O63D6G", spotifyUrl: "https://open.spotify.com/album/3IGAkpd5fSALj6Z7O63D6G", appleMusicUrl: "https://music.apple.com/us/album/vinicius-de-moraes/179151876", youtubeUrl: "https://www.youtube.com/watch?v=HYKxSlFuDVs", tracks: [
+        {number: 1, title: "Copa do Mundo - Live", duration: "1:18"},
+        {number: 2, title: "A Felicidade - Live", duration: "4:44"},
+        {number: 3, title: "Tomara - Live", duration: "3:06"},
+        {number: 4, title: "Que Maravilha - Live", duration: "2:31"},
+        {number: 5, title: "Lamento No Morro - Live", duration: "2:31"},
+        {number: 6, title: "Berimbau/Consolacao - Live", duration: "2:48"},
+        {number: 7, title: "Irene - Live", duration: "2:37"},
+        {number: 8, title: "Canto de Ossanha - Live", duration: "3:13"},
+        {number: 9, title: "Garota de Ipanema - Live", duration: "2:22"},
+        {number: 10, title: "Samba Em Preludio - Live", duration: "4:03"},
+        {number: 11, title: "Catenda - Live", duration: "5:02"},
+        {number: 12, title: "Valsa da Tunisia - Live", duration: "3:07"},
+        {number: 13, title: "Eu Sei Que Vou Te Amar - Live", duration: "3:58"},
+        {number: 14, title: "Minha Namorada - Live", duration: "3:56"},
+        {number: 15, title: "Se Todos Fossem Iguais a Você - Live", duration: "3:07"},
+        {number: 16, title: "Voce Abusou - Live", duration: "2:42"}
+      ]},
+      {title: "Use Your Illusion I", artist: "Guns N' Roses", year: 1991, genre: "Hard Rock", description: "An ambitious double album featuring heavy rock and ballad masterpieces.", cover: "https://i.scdn.co/image/ab67616d00001e02e44963b8bb127552ac761873", analysis: "pendiente", spotifyUri: "spotify:album:0CxPbTRARqKUYighiEY9Sz", spotifyUrl: "https://open.spotify.com/album/0CxPbTRARqKUYighiEY9Sz", appleMusicUrl: "https://music.apple.com/us/album/use-your-illusion-i/1644730026", youtubeUrl: "https://www.youtube.com/watch?v=XaAugobVMnI", tracks: [
+        {number: 1, title: "Right Next Door To Hell", duration: "3:02"},
+        {number: 2, title: "Dust N' Bones", duration: "4:58"},
+        {number: 3, title: "Live And Let Die", duration: "3:02"},
+        {number: 4, title: "Don't Cry (Original)", duration: "4:43"},
+        {number: 5, title: "Perfect Crime", duration: "2:23"},
+        {number: 6, title: "You Ain't The First", duration: "2:36"},
+        {number: 7, title: "Bad Obsession", duration: "5:26"},
+        {number: 8, title: "Back Off Bitch", duration: "5:02"},
+        {number: 9, title: "Double Talkin' Jive", duration: "3:22"},
+        {number: 10, title: "November Rain", duration: "8:56"},
+        {number: 11, title: "The Garden", duration: "5:19"},
+        {number: 12, title: "Garden Of Eden", duration: "2:40"},
+        {number: 13, title: "Don't Damn Me", duration: "5:18"},
+        {number: 14, title: "Bad Apples", duration: "4:27"},
+        {number: 15, title: "Dead Horse", duration: "4:17"},
+        {number: 16, title: "Coma", duration: "10:13"}
+      ]},
+      {title: "Use Your Illusion II", artist: "Guns N' Roses", year: 1991, genre: "Hard Rock", description: "The companion album featuring epic songs and orchestral arrangements.", cover: "https://i.scdn.co/image/ab67616d00001e023a188eee204abd8a9abdaf44", analysis: "pendiente", spotifyUri: "spotify:album:5NL0MCTSbQtO13G62ofWAf", spotifyUrl: "https://open.spotify.com/album/5NL0MCTSbQtO13G62ofWAf", appleMusicUrl: "https://music.apple.com/us/album/use-your-illusion-ii/1389971138", youtubeUrl: "https://www.youtube.com/watch?v=XaAugobVMnI", tracks: [
+        {number: 1, title: "Civil War", duration: "7:42"},
+        {number: 2, title: "14 Years", duration: "4:21"},
+        {number: 3, title: "Yesterdays", duration: "3:16"},
+        {number: 4, title: "Knockin' On Heaven's Door", duration: "5:36"},
+        {number: 5, title: "Get In The ring", duration: "5:41"},
+        {number: 6, title: "Shotgun Blues", duration: "3:23"},
+        {number: 7, title: "Breakdown", duration: "7:04"},
+        {number: 8, title: "Pretty Tied Up (The Perils Of Rock N' Roll Decadence)", duration: "4:47"},
+        {number: 9, title: "Locomotive (Complicity)", duration: "8:42"},
+        {number: 10, title: "So Fine", duration: "4:06"},
+        {number: 11, title: "Estranged", duration: "9:23"},
+        {number: 12, title: "You Could Be Mine", duration: "5:43"},
+        {number: 13, title: "Don't Cry", duration: "4:44"},
+        {number: 14, title: "My World", duration: "1:26"}
+      ]},
+      {title: "Paranoid", artist: "Black Sabbath", year: 1970, genre: "Heavy Metal", description: "A heavy metal classic that helped define the genre.", cover: "https://i.scdn.co/image/ab67616d00001e02cfa6ec6d5374ce8aec1a73f5", analysis: "pendiente", spotifyUri: "spotify:album:714ndVxSx8lIWhQxdbcXIs", spotifyUrl: "https://open.spotify.com/album/714ndVxSx8lIWhQxdbcXIs", appleMusicUrl: "https://music.apple.com/us/album/paranoid/785232473", youtubeUrl: "https://www.youtube.com/watch?v=fWvKvOViM3g", tracks: [
+        {number: 1, title: "War Pigs", duration: "7:54"},
+        {number: 2, title: "Paranoid", duration: "2:47"},
+        {number: 3, title: "Planet Caravan", duration: "4:30"},
+        {number: 4, title: "Iron Man", duration: "5:54"},
+        {number: 5, title: "Electric Funeral", duration: "4:49"},
+        {number: 6, title: "Hand Of Doom", duration: "7:07"},
+        {number: 7, title: "Rat Salad - Instrumental", duration: "2:29"},
+        {number: 8, title: "Fairies Wear Boots", duration: "6:14"}
+      ]},
+      {title: "Currents", artist: "Tame Impala", year: 2015, genre: "Psychedelic Pop", description: "A psychedelic pop journey exploring rhythm and electronic textures.", cover: "https://i.scdn.co/image/ab67616d00001e029e1cfc756886ac782e363d79", analysis: "pendiente", spotifyUri: "spotify:album:79dL7FLiJFOO0EoehUHQBv", spotifyUrl: "https://open.spotify.com/album/79dL7FLiJFOO0EoehUHQBv", appleMusicUrl: "https://music.apple.com/us/album/currents/1440838039", youtubeUrl: "https://www.youtube.com/watch?v=LM6b85stNWI", tracks: [
+        {number: 1, title: "Let It Happen", duration: "7:47"},
+        {number: 2, title: "Nangs", duration: "1:47"},
+        {number: 3, title: "The Moment", duration: "4:15"},
+        {number: 4, title: "Yes I'm Changing", duration: "4:30"},
+        {number: 5, title: "Eventually", duration: "5:18"},
+        {number: 6, title: "Gossip", duration: "0:55"},
+        {number: 7, title: "The Less I Know The Better", duration: "3:36"},
+        {number: 8, title: "Past Life", duration: "3:48"},
+        {number: 9, title: "Disciples", duration: "1:48"},
+        {number: 10, title: "'Cause I'm A Man", duration: "4:01"},
+        {number: 11, title: "Reality In Motion", duration: "4:12"},
+        {number: 12, title: "Love/Paranoia", duration: "3:05"},
+        {number: 13, title: "New Person, Same Old Mistakes", duration: "6:03"}
+      ]},
+      {title: "Metallica", artist: "Metallica", year: 1991, genre: "Heavy Metal", description: "The Black Album, Metallica's self-titled masterpiece of heavy metal.", cover: "https://i.scdn.co/image/ab67616d00001e02af07dc851962508661bbcfce", analysis: "pendiente", spotifyUri: "spotify:album:6QdCohkHKNTVoaSx1ZzitH", spotifyUrl: "https://open.spotify.com/album/6QdCohkHKNTVoaSx1ZzitH", appleMusicUrl: "https://music.apple.com/us/album/metallica/579372950", youtubeUrl: "https://www.youtube.com/watch?v=qby6DlZlG3s", tracks: [
+        {number: 1, title: "Enter Sandman", duration: "5:31"},
+        {number: 2, title: "Sad But True", duration: "5:24"},
+        {number: 3, title: "Holier Than Thou", duration: "3:47"},
+        {number: 4, title: "The Unforgiven", duration: "6:27"},
+        {number: 5, title: "Wherever I May Roam", duration: "6:44"},
+        {number: 6, title: "Don't Tread On Me", duration: "4:00"},
+        {number: 7, title: "Through The Never", duration: "4:04"},
+        {number: 8, title: "Nothing Else Matters", duration: "6:28"},
+        {number: 9, title: "Of Wolf And Man", duration: "4:16"},
+        {number: 10, title: "The God That Failed", duration: "5:08"},
+        {number: 11, title: "My Friend Of Misery", duration: "6:49"},
+        {number: 12, title: "The Struggle Within", duration: "3:53"}
+      ]},
+      {title: "By the Way", artist: "Red Hot Chili Peppers", year: 2002, genre: "Alternative Rock / Pop Rock", description: "Octavo álbum de los Red Hot Chili Peppers, un giro hacia un sonido más melódico e influenciado por el pop psicodélico. Edición deluxe con bonus tracks 'Runaway' y 'Bicycle Song'.", cover: "https://i.scdn.co/image/ab67616d00001e02de1af2785a83cc660155a0c4", analysis: "pendiente", spotifyUri: "spotify:album:6deiaArbeoqp1xPEGdEKp1", spotifyUrl: "https://open.spotify.com/album/6deiaArbeoqp1xPEGdEKp1", appleMusicUrl: "https://music.apple.com/us/album/by-the-way-deluxe-edition/948438400", youtubeUrl: "https://www.youtube.com/watch?v=vAZI-gD2Auw", tracks: [{number: 1, title: "By the Way", duration: "3:36"}, {number: 2, title: "Universally Speaking", duration: "4:16"}, {number: 3, title: "This Is the Place", duration: "4:17"}, {number: 4, title: "Dosed", duration: "5:11"}, {number: 5, title: "Don't Forget Me", duration: "4:37"}, {number: 6, title: "The Zephyr Song", duration: "3:51"}, {number: 7, title: "Can't Stop", duration: "4:29"}, {number: 8, title: "I Could Die for You", duration: "3:12"}, {number: 9, title: "Midnight", duration: "4:55"}, {number: 10, title: "Throw Away Your Television", duration: "3:44"}, {number: 11, title: "Cabron", duration: "3:38"}, {number: 12, title: "Tear", duration: "5:17"}, {number: 13, title: "On Mercury", duration: "3:27"}, {number: 14, title: "Minor Thing", duration: "3:37"}, {number: 15, title: "Warm Tape", duration: "4:15"}, {number: 16, title: "Venice Queen", duration: "6:07"}, {number: 17, title: "Runaway - 2006 Remaster", duration: "4:30"}, {number: 18, title: "Bicycle Song - 2006 Remaster", duration: "3:23"}]}
+    ];
+
+    let sortState = 'default';
+
+    function init() {
+      setupSortListeners();
+      renderAlbumGrid();
+      setupModalListeners();
+    }
+
+    function setupSortListeners() {
+      document.getElementById('sortBtn').addEventListener('click', () => {
+        document.getElementById('sortDropdown').classList.toggle('active');
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.sort-banner')) {
+          document.getElementById('sortDropdown').classList.remove('active');
+        }
+      });
+
+      document.querySelectorAll('input[name="sort"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+          sortState = e.target.value;
+          applySort();
+        });
+      });
+    }
+
+    function applySort() {
+      let sorted = [...albums];
+      switch (sortState) {
+        case 'alphabetical':
+          sorted.sort((a, b) => a.title.localeCompare(b.title));
+          break;
+        case 'artist':
+          sorted.sort((a, b) => a.artist.localeCompare(b.artist));
+          break;
+        case 'year':
+          sorted.sort((a, b) => a.year - b.year);
+          break;
+        case 'yearDesc':
+          sorted.sort((a, b) => b.year - a.year);
+          break;
+      }
+      renderAlbumGrid(sorted);
+    }
+
+    function renderAlbumGrid(albumsToRender = albums) {
+      const grid = document.getElementById('albumGrid');
+      grid.innerHTML = '';
+      albumsToRender.forEach((album) => {
+        const originalIndex = albums.indexOf(album);
+        const card = document.createElement('div');
+        card.className = 'album-card';
+        card.innerHTML = `<img src="${album.cover}" alt="${album.title}"><div class="album-card-overlay"><div class="overlay-text"><div class="overlay-title">${album.title}</div><div class="overlay-artist">${album.artist}</div></div></div>`;
+        card.addEventListener('click', () => openModal(originalIndex));
+        grid.appendChild(card);
+      });
+    }
+
+    function openModal(albumIndex) {
+      const album = albums[albumIndex];
+      document.getElementById('modalTitle').textContent = album.title;
+      document.getElementById('modalArtist').textContent = album.artist;
+      document.getElementById('modalYear').textContent = `• ${album.year}`;
+      document.getElementById('modalGenre').textContent = album.genre;
+      document.getElementById('modalDescription').textContent = album.description;
+      document.getElementById('modalCover').src = album.cover;
+
+      document.getElementById('spotifyLink').onclick = (e) => {
+        e.preventDefault();
+        window.location.href = album.spotifyUri;
+      };
+
+      document.getElementById('appleMusicLink').onclick = (e) => {
+        e.preventDefault();
+        const link = document.createElement('a');
+        link.href = album.appleMusicUrl;
+        link.target = '_blank';
+        link.click();
+      };
+
+      document.getElementById('youtubeLink').onclick = (e) => {
+        e.preventDefault();
+        const link = document.createElement('a');
+        link.href = album.youtubeUrl;
+        link.target = '_blank';
+        link.click();
+      };
+
+      renderTrackList(album.tracks);
+      if (album.analysis) {
+        renderAnalysis(album.analysis);
+      }
+      document.getElementById('modalOverlay').classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+      document.getElementById('modalOverlay').classList.remove('active');
+      document.getElementById('trackListContainer').classList.remove('active');
+      document.getElementById('analysisContainer').classList.remove('active');
+      document.body.style.overflow = 'auto';
+    }
+
+    function renderTrackList(tracks) {
+      const trackList = document.getElementById('trackList');
+      trackList.innerHTML = '';
+      tracks.forEach(track => {
+        if (track.section) {
+          const sectionItem = document.createElement('div');
+          sectionItem.style.cssText = 'font-weight: 700; color: var(--accent-warm); margin-top: 1rem; margin-bottom: 0.5rem; font-size: 0.9rem; letter-spacing: 0.05em; text-transform: uppercase;';
+          sectionItem.textContent = track.section;
+          trackList.appendChild(sectionItem);
+        } else {
+          const trackItem = document.createElement('div');
+          trackItem.className = 'track-item';
+          trackItem.innerHTML = `<span class="track-number">${String(track.number).padStart(2, '0')}.</span><span class="track-title">${track.title}</span><span class="track-duration">${track.duration}</span>`;
+          trackList.appendChild(trackItem);
+        }
+      });
+    }
+
+    function toggleTrackList() {
+      document.getElementById('trackListContainer').classList.toggle('active');
+    }
+
+    function renderAnalysis(analysisText) {
+      const analysisContent = document.getElementById('analysisContent');
+      analysisContent.innerHTML = '';
+
+      if (!analysisText) {
+        analysisContent.innerHTML = '<p style="color: var(--text-muted);">No hay análisis disponible para este álbum.</p>';
+        return;
+      }
+
+      const paragraphs = analysisText.split('\n\n');
+      paragraphs.forEach(paragraph => {
+        if (paragraph.trim()) {
+          const p = document.createElement('p');
+          p.textContent = paragraph.trim();
+          analysisContent.appendChild(p);
+        }
+      });
+    }
+
+    function toggleAnalysis() {
+      document.getElementById('analysisContainer').classList.toggle('active');
+    }
+
+    function setupModalListeners() {
+      const modalOverlay = document.getElementById('modalOverlay');
+      document.getElementById('modalClose').addEventListener('click', closeModal);
+      modalOverlay.addEventListener('click', (e) => {
+        if (e.target === modalOverlay) closeModal();
+      });
+      document.getElementById('trackListBtn').addEventListener('click', toggleTrackList);
+      document.getElementById('analysisBtn').addEventListener('click', toggleAnalysis);
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modalOverlay.classList.contains('active')) closeModal();
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
